@@ -1,17 +1,15 @@
 import type { NextConfig } from "next";
+import withSerwist from "@serwist/next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
   partialPrefetching: true,
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
 };
 
-export default nextConfig;
+const withSerwistConfig = withSerwist({
+  swSrc: "src/app/sw.ts",
+  swDest: "public/sw.js",
+  disable: process.env.NODE_ENV !== "production",
+});
+
+export default withSerwistConfig(nextConfig);
