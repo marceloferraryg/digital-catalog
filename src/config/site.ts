@@ -23,6 +23,13 @@ export const siteConfig = {
     mapsUrl: "",
   },
 
+  //Horário de funcionamento
+  hours: {
+    mondayToFriday: "Seg–Sex: 08h às 18h",
+    saturday: "Sáb: 08h às 12h",
+    sunday: "Dom: Fechado",
+  },
+
   // Aparência
   theme: {
     mode: "dark" as const,
