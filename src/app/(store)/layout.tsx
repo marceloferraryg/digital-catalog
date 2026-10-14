@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-//import Header from "@/components/layout/Header";
+import HeaderStore from "@/components/layout/HeaderStore";
 //import Footer from "@/components/layout/Footer";
 
 export default function LayoutStore({
@@ -9,7 +9,7 @@ export default function LayoutStore({
 }>) {
   return (
     <div className="flex min-h-screen flex-col">
-      {/*<Header />*/}
+      <HeaderStore />
 
       <main className="flex-1">{children}</main>
 
