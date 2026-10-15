@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import HeaderStore from "@/components/layout/HeaderStore";
-//import Footer from "@/components/layout/Footer";
+import FooterStore from "@/components/layout/Footer";
 
 export default function LayoutStore({
   children,
@@ -13,7 +13,7 @@ export default function LayoutStore({
 
       <main className="flex-1">{children}</main>
 
-      {/*<Footer />*/}
+      <FooterStore />
     </div>
   );
 }

@@ -14,6 +14,14 @@ export const siteConfig = {
   phone: "",
   email: "",
 
+  // Redes sociais
+  socials: {
+    instagram: "https://www.instagram.com/sa_smart.acessorios/",
+    facebook: "https://www.facebook.com/smartcellbrasil/",
+    tiktok: "https://www.tiktok.com/@smartcellbrasil",
+    youtube: "https://www.youtube.com/@smartcellbrasil",
+  },
+
   // Endereço
   address: {
     street: "",
