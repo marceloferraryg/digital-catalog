@@ -10,24 +10,26 @@ export const siteConfig = {
   favicon: "/favicon.ico",
 
   // Contato
-  whatsapp: "5543999999999",
+  whatsappButton: "5543999655339",
+  whatsapp: "(43) 99965-5339",
   phone: "",
   email: "",
 
   // Redes sociais
   socials: {
     instagram: "https://www.instagram.com/sa_smart.acessorios/",
-    facebook: "https://www.facebook.com/smartcellbrasil/",
-    tiktok: "https://www.tiktok.com/@smartcellbrasil",
-    youtube: "https://www.youtube.com/@smartcellbrasil",
+    facebook: "https://www.facebook.com/",
+    tiktok: "https://www.tiktok.com/",
+    youtube: "https://www.youtube.com/",
   },
 
   // Endereço
   address: {
-    street: "",
+    street: "Av. Sete de Setembro, 1076-A",
+    neighborhood: "Centro",
     city: "Manoel Ribas",
     state: "PR",
-    zipCode: "",
+    zipCode: "85260-000",
     mapsUrl: "",
   },
 
