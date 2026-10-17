@@ -36,6 +36,15 @@
   box-sizing: border-box;
 }
 
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 html {
   min-height: 100%;
   scroll-behavior: smooth;
