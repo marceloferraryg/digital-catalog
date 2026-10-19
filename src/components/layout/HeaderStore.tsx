@@ -5,10 +5,29 @@ import Image from "next/image";
 import Link from "next/link";
 import { siteConfig } from "@/config/site";
 
-import { MapPin, CalendarClock, Menu, X } from "lucide-react";
+import {
+  FaInstagram,
+  FaFacebook,
+  FaTiktok,
+  FaYoutube,
+  FaWhatsapp,
+} from "react-icons/fa6";
+
+import { MapPin, CalendarClock, Menu, X, ArrowRight } from "lucide-react";
 
 export default function HeaderStore() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const SOCIALS = [
+    {
+      label: "Instagram",
+      href: siteConfig.socials.instagram,
+      icon: FaInstagram,
+    },
+    { label: "Facebook", href: siteConfig.socials.facebook, icon: FaFacebook },
+    { label: "TikTok", href: siteConfig.socials.tiktok, icon: FaTiktok },
+    { label: "YouTube", href: siteConfig.socials.youtube, icon: FaYoutube },
+  ];
 
   const MENU = [
     { label: "Home", href: "/" },
@@ -21,7 +40,7 @@ export default function HeaderStore() {
     <header className="relative w-full bg-(--background)">
       {/* ---------------- Menu mobile ---------------- */}
 
-      <div className="container relative flex h-24 w-full items-center border-b border-(--border) md:hidden">
+      <div className="container relative flex h-24 w-full items-center md:hidden">
         {/* Botão do menu */}
         <button
           type="button"
@@ -69,7 +88,10 @@ export default function HeaderStore() {
             id="mobile-menu"
             className="absolute left-0 top-24 z-50 w-72 max-w-[85vw] md:hidden"
           >
-            <div className="flex min-h-64 max-h-[calc(100dvh-6rem)] flex-col overflow-y-auto border-r border-(--border) bg-(--surface) shadow-xl">
+            <div
+              className="flex min-h-64 max-h-[calc(100dvh-6rem)] flex-col overflow-y-auto 
+                            bg-(--surface) shadow-xl"
+            >
               <nav className="flex flex-col gap-1 p-3">
                 {MENU.map((item) => (
                   <Link
@@ -85,6 +107,25 @@ export default function HeaderStore() {
                   </Link>
                 ))}
               </nav>
+
+              <div className="flex gap-4 p-4 justify-center items-center border-t border-(--border)">
+                {SOCIALS.map((social) => (
+                  <Link
+                    key={social.label}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.label}
+                    className="group hover:text-(--primary) transition-colors w-12 h-12
+                                justify-center items-center flex "
+                  >
+                    <social.icon
+                      size={28}
+                      className="text-(--foreground) group-hover:text-(--primary) transition-colors"
+                    />
+                  </Link>
+                ))}
+              </div>
 
               {/* Informações da loja */}
               <div className="mt-auto flex flex-col gap-4 border-t border-(--border) p-4">
@@ -113,25 +154,68 @@ export default function HeaderStore() {
 
       {/* ---------------- Menu desktop ---------------- */}
 
-      <div className="container mx-auto hidden h-32 w-full flex-col items-center border-b border-(--border) pb-2 md:flex">
+      <div className="container mx-auto hidden h-40 w-full flex-col items-center pb-2 md:flex">
         {/* Faixa superior com informações */}
-        <div className="flex h-10 w-full items-center justify-center gap-12 bg-(--surface)">
-          <div className="flex items-center gap-2">
-            <MapPin size={20} className="text-(--primary)" strokeWidth={2} />
-            <p className="text-sm text-(--foreground)">
-              {siteConfig.address.city} - {siteConfig.address.state}
-            </p>
+        <div className="flex h-12 w-full items-center bg-(--surface) justify-around">
+          <div className="flex gap-12 items-center justify-center">
+            <div className="flex items-center gap-2">
+              <MapPin size={20} className="text-(--primary)" strokeWidth={2} />
+              <p className="text-sm text-(--foreground)">
+                {siteConfig.address.city} - {siteConfig.address.state}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <CalendarClock
+                size={20}
+                className="text-(--primary)"
+                strokeWidth={2}
+              />
+              <p className="text-sm text-(--foreground)">
+                {siteConfig.hours.mondayToFriday} | {siteConfig.hours.saturday}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <CalendarClock
-              size={20}
-              className="text-(--primary)"
-              strokeWidth={2}
-            />
-            <p className="text-sm text-(--foreground)">
-              {siteConfig.hours.mondayToFriday} | {siteConfig.hours.saturday}
-            </p>
+          <div className="flex items-center justify-center gap-8">
+            <div className="flex gap-4 justify-center items-center">
+              {SOCIALS.map((social) => (
+                <Link
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className="group hover:text-(--primary) transition-colors w-10 h-10
+                                justify-center items-center flex"
+                >
+                  <social.icon
+                    size={24}
+                    className="text-(--foreground) group-hover:text-(--primary) transition-colors"
+                  />
+                </Link>
+              ))}
+            </div>
+
+            <Link
+              href={`https://wa.me/${siteConfig.whatsappButton}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="WhatsApp"
+              className="flex items-center justify-center gap-2 bg-(--whatsapp) p-1 rounded-md"
+            >
+              <FaWhatsapp size={24} color="black" />
+              <span
+                className="group text-sm text-black group-hover:text-(--primary) transition-colors 
+                            flex items-center gap-2 font-bold"
+              >
+                Chamar agora
+                <ArrowRight
+                  size={20}
+                  className="transition-transform group-hover:translate-x-1"
+                />
+              </span>
+            </Link>
           </div>
         </div>
 
@@ -141,7 +225,7 @@ export default function HeaderStore() {
             <Image
               src={siteConfig.logo}
               alt={siteConfig.name}
-              width={150}
+              width={200}
               height={50}
               priority
             />

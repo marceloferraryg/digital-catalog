@@ -34,11 +34,11 @@ export default function FooterStore() {
 
   return (
     <footer
-      className="container bg-(--background) border-t border-(--border) items-center justify-center 
+      className="container bg-(--background) items-center justify-center 
                   flex flex-col gap-4"
     >
-      <div className="flex flex-col items-center justify-center gap-4 mt-4 md:flex-row">
-        <div className="flex flex-col justify-center items-center">
+      <div className="flex flex-col items-center justify-center gap-4 mt-4 md:justify-around ">
+        <div className="flex flex-col justify-center items-center md:flex-row md:w-full md:justify-around">
           {/* ---------------- LOGO E REDES SOCIAIS ---------------- */}
 
           <div className="flex flex-col items-center justify-center gap-2 w-100">
@@ -119,8 +119,8 @@ export default function FooterStore() {
         {/* ---------------- INFOS SERVICES ---------------- */}
 
         <div
-          className="flex flex-col items-start justify-center gap-4 mt-4 pl-4 pr-4 py-4
-                      border-t border-b border-(--border) md:border-t-0 md:border-b-0 md:border-l md:border-r"
+          className="flex flex-col items-start justify-center gap-4 mt-4 py-4 w-full px-8
+                      border-t border-b border-(--border) md:flex-row md:w-full md:justify-around"
         >
           <div className="flex items-center gap-2 text-(--foreground) justify-center">
             <div>
@@ -130,9 +130,9 @@ export default function FooterStore() {
               <p className="flex text-md text-(--foreground) font-semibold items-center">
                 Produtos de qualidade
               </p>
-              <span className="text-xs text-(--muted)">
+              <p className="text-xs text-(--muted)">
                 As melhores marcas em eletronicos e acessórios.
-              </span>
+              </p>
             </div>
           </div>
 
@@ -144,9 +144,9 @@ export default function FooterStore() {
               <p className="flex text-md text-(--foreground) font-semibold items-center">
                 Assistência técnica especializada
               </p>
-              <span className="text-xs text-(--muted)">
+              <p className="text-xs text-(--muted)">
                 Técnicos experientes e atendimento confiável.
-              </span>
+              </p>
             </div>
           </div>
 
@@ -158,9 +158,9 @@ export default function FooterStore() {
               <p className="flex text-md text-(--foreground) font-semibold items-center">
                 Pagamento facilitado
               </p>
-              <span className="text-xs text-(--muted)">
+              <p className="text-xs text-(--muted)">
                 Diversas formas de pagamento na loja.
-              </span>
+              </p>
             </div>
           </div>
 
@@ -172,17 +172,17 @@ export default function FooterStore() {
               <p className="flex text-md text-(--foreground) font-semibold items-center">
                 Atendimento personalizado
               </p>
-              <span className="text-xs text-(--muted)">
+              <p className="text-xs text-(--muted)">
                 Suporte antes e depois da compra.
-              </span>
+              </p>
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col items-start justify-center">
+        <div className="flex flex-col items-start justify-center md:flex-row md:w-full md:justify-around">
           {/* ---------------- LOCATION ---------------- */}
 
-          <div className="flex flex-col items-start justify-center gap-4 px-8 py-2">
+          <div className="flex flex-col items-start justify-center gap-4 px-8">
             <h1 className="text-(--foreground) text-lg font-semibold border-b-2 border-(--primary) mb-2">
               Nossa loja
             </h1>
@@ -232,9 +232,15 @@ export default function FooterStore() {
 
           {/* ---------------- PAYMENT METOD ---------------- */}
 
-          <div className="flex items-center justify-center p-2">
+          <div
+            className="flex flex-col items-start justify-center gap-4 mt-4 py-4 px-8
+                          border-t border-(--border) md:border-t-0 md:mt-0"
+          >
+            <h1 className="text-(--foreground) text-lg font-semibold border-b-2 border-(--primary)">
+              Meios de pagamento
+            </h1>
             <Image
-              src={"/images/payment-metod.png"}
+              src={"/images/payment-metodd.png"}
               alt={"Metodos de pagamentos"}
               width={500}
               height={50}
@@ -245,7 +251,7 @@ export default function FooterStore() {
       </div>
 
       {/* ---------------- DIREITOS RESERVADOS ---------------- */}
-      <div className="flex items-center gap-2 text-center mt-4 bg-(--surface) py-3 px-4 justify-end w-full">
+      <div className="flex items-center gap-2 text-center mt-4 bg-(--surface) py-3 px-4 justify-center w-full">
         <p className="text-sm text-(--foreground)">
           &copy; 2026 - {siteConfig.name} - Todos os direitos reservados.
         </p>
