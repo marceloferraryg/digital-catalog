@@ -11,7 +11,7 @@ export default function Hero() {
 
       <div className="relative hidden w-full md:block">
         <Image
-          src="/images/home/hero-desktop.png"
+          src="/images/home/hero/hero-desktop.png"
           alt=""
           width={1983}
           height={793}
@@ -25,7 +25,7 @@ export default function Hero() {
 
       <div className="relative w-full md:hidden">
         <Image
-          src="/images/home/hero-mobile.png"
+          src="/images/home/hero/hero-mobile.png"
           alt=""
           width={941}
           height={1672}
