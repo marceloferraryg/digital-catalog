@@ -48,7 +48,7 @@ export default function HeaderStore() {
           aria-expanded={isMenuOpen}
           aria-controls="mobile-menu"
           onClick={() => setIsMenuOpen((open) => !open)}
-          className="absolute left-4 flex size-12 items-center justify-center"
+          className="absolute left-4 z-50 flex size-12 touch-manipulation items-center justify-center"
         >
           {isMenuOpen ? (
             <X size={28} color="var(--primary)" />

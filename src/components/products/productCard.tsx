@@ -20,12 +20,12 @@ type ProductCardProps = {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const formattedPrice =
-    product.price !== null
-      ? product.price.toLocaleString("pt-BR", {
+    product.price === null || product.price === 0
+      ? null
+      : product.price.toLocaleString("pt-BR", {
           style: "currency",
           currency: "BRL",
-        })
-      : null;
+        });
 
   const message = "Olá! Tenho interesse no produto: " + product.name;
 
@@ -37,13 +37,13 @@ export default function ProductCard({ product }: ProductCardProps) {
                         border border-(--border) bg-(--surface) transition-colors hover:border-(--primary)"
     >
       {/* Imagem do produto */}
-      <div className="relative aspect-4/3 overflow-hidden bg-(--background)">
+      <div className="relative aspect-3/4 overflow-hidden bg-(--background)">
         <Image
           src={product.image}
           alt={product.name}
           fill
           sizes="(max-width: 639px) 50vw, (max-width: 1023px) 33vw, 25vw"
-          className="object-contain p-3 transition-transform duration-300 group-hover:scale-105"
+          className="object-contain transition-transform duration-300 group-hover:scale-105 "
         />
       </div>
 
@@ -63,7 +63,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               {formattedPrice}
             </p>
           ) : (
-            <p className="text-sm text-(--muted)">Consulte o preço</p>
+            <p className="text-md text-(--muted)">Consulte o preço</p>
           )}
         </div>
 
@@ -81,8 +81,8 @@ export default function ProductCard({ product }: ProductCardProps) {
           target="_blank"
           rel="noopener noreferrer"
           aria-label={`Consultar ${product.name} pelo WhatsApp`}
-          className="mt-auto flex items-center justify-center gap-2 rounded-lg bg-(--whatsapp) 
-                        px-3 py-2 text-sm font-bold text-black transition-opacity hover:opacity-90"
+          className="flex items-center justify-center gap-2 rounded-lg bg-(--primary) 
+                        px-3 py-2 mt-2 text-sm font-bold text-black transition-opacity hover:opacity-90"
         >
           <FaWhatsapp size={20} color="black" />
           <span className="text-black">Consultar</span>
