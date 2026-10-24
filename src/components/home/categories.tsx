@@ -31,7 +31,7 @@ const CATEGORIES = [
 
 export default function Categories() {
   return (
-    <section className="p-4 lg:p-8">
+    <section className="p-4 lg:p-8 mb-8">
       <div className="">
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-(--foreground) lg:text-3xl">

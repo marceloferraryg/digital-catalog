@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { SlidersHorizontal, X, ChevronDown } from "lucide-react";
+import { SlidersHorizontal, X, Search } from "lucide-react";
 
 export type ProductFiltersState = {
   category: string;
@@ -14,6 +14,8 @@ export type ProductFiltersState = {
 type ProductFiltersProps = {
   filters: ProductFiltersState;
   brands: string[];
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
   onChange: (filters: ProductFiltersState) => void;
   onClear: () => void;
 };
@@ -28,6 +30,8 @@ const CATEGORIES = [
 export default function ProductFilters({
   filters,
   brands,
+  searchTerm,
+  onSearchChange,
   onChange,
   onClear,
 }: ProductFiltersProps) {
@@ -40,9 +44,31 @@ export default function ProductFilters({
     onChange({ ...filters, [key]: value });
   };
 
+  const searchField = (
+    <div className="relative">
+      <label htmlFor="product-search" className="sr-only">
+        Buscar produto pelo nome
+      </label>
+
+      <Search
+        size={18}
+        aria-hidden="true"
+        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-(--muted)"
+      />
+
+      <input
+        id="product-search"
+        type="search"
+        value={searchTerm}
+        onChange={(event) => onSearchChange(event.target.value)}
+        placeholder="Buscar produto..."
+        className="w-full rounded-xl border border-(--border) bg-(--surface) py-3 pl-10 pr-3 text-sm text-(--foreground) outline-none transition placeholder:text-(--muted) focus:border-(--primary)"
+      />
+    </div>
+  );
+
   const filterContent = (
     <div className="space-y-6">
-      {/* Categoria */}
       <div>
         <label
           htmlFor="filter-category"
@@ -55,8 +81,7 @@ export default function ProductFilters({
           id="filter-category"
           value={filters.category}
           onChange={(event) => updateFilter("category", event.target.value)}
-          className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
-                        text-sm text-(--foreground) outline-none focus:border-(--primary)"
+          className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
         >
           {CATEGORIES.map((category) => (
             <option key={category.value} value={category.value}>
@@ -66,7 +91,6 @@ export default function ProductFilters({
         </select>
       </div>
 
-      {/* Marca */}
       <div>
         <label
           htmlFor="filter-brand"
@@ -79,11 +103,9 @@ export default function ProductFilters({
           id="filter-brand"
           value={filters.brand}
           onChange={(event) => updateFilter("brand", event.target.value)}
-          className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
-                        text-sm text-(--foreground) outline-none focus:border-(--primary)"
+          className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
         >
           <option value="">Todas as marcas</option>
-
           {brands.map((brand) => (
             <option key={brand} value={brand}>
               {brand}
@@ -92,7 +114,6 @@ export default function ProductFilters({
         </select>
       </div>
 
-      {/* Faixa de preço */}
       <div>
         <p className="mb-2 text-sm font-semibold text-(--foreground)">
           Faixa de preço
@@ -106,7 +127,6 @@ export default function ProductFilters({
             >
               Mínimo (R$)
             </label>
-
             <input
               id="filter-min-price"
               type="number"
@@ -115,8 +135,7 @@ export default function ProductFilters({
               placeholder="0,00"
               value={filters.minPrice}
               onChange={(event) => updateFilter("minPrice", event.target.value)}
-              className="w-full min-w-0 rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
-                            text-sm text-(--foreground) outline-none focus:border-(--primary)"
+              className="w-full min-w-0 rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
             />
           </div>
 
@@ -127,7 +146,6 @@ export default function ProductFilters({
             >
               Máximo (R$)
             </label>
-
             <input
               id="filter-max-price"
               type="number"
@@ -136,14 +154,12 @@ export default function ProductFilters({
               placeholder="1.000,00"
               value={filters.maxPrice}
               onChange={(event) => updateFilter("maxPrice", event.target.value)}
-              className="w-full min-w-0 rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
-                            text-sm text-(--foreground) outline-none focus:border-(--primary)"
+              className="w-full min-w-0 rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
             />
           </div>
         </div>
       </div>
 
-      {/* Ordenação */}
       <div>
         <label
           htmlFor="filter-sort"
@@ -151,7 +167,6 @@ export default function ProductFilters({
         >
           Ordenar por preço
         </label>
-
         <select
           id="filter-sort"
           value={filters.sort}
@@ -161,8 +176,7 @@ export default function ProductFilters({
               event.target.value as ProductFiltersState["sort"],
             )
           }
-          className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm 
-                        text-(--foreground) outline-none focus:border-(--primary)"
+          className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
         >
           <option value="default">Padrão</option>
           <option value="price-asc">Menor preço</option>
@@ -173,8 +187,7 @@ export default function ProductFilters({
       <button
         type="button"
         onClick={onClear}
-        className="w-full rounded-lg border border-(--border) px-4 py-2.5 text-sm font-medium 
-                    text-(--foreground) transition hover:border-(--primary)"
+        className="w-full rounded-lg border border-(--border) px-4 py-2.5 text-sm font-medium text-(--foreground) transition hover:border-(--primary)"
       >
         Limpar filtros
       </button>
@@ -183,30 +196,35 @@ export default function ProductFilters({
 
   return (
     <>
-      {/* Botão visível somente no celular */}
-      <button
-        type="button"
-        onClick={() => setMobileOpen(true)}
-        className="mb-5 flex w-full items-center justify-center gap-4 rounded-xl 
-                    border border-(--border) bg-(--surface) px-4 py-3 
-                    text-sm font-semibold text-(--foreground) md:hidden"
-        aria-expanded={mobileOpen}
-        aria-controls="mobile-product-filters"
-      >
-        <SlidersHorizontal size={18} />
-        Filtrar produtos
-      </button>
+      {/* Busca e botão de filtros no celular */}
+      <div className="mb-4 space-y-3 md:hidden">
+        {searchField}
 
-      {/* Painel lateral no desktop */}
-      <aside className="hidden h-fit rounded-xl border border-(--border) bg-(--surface) p-5 md:block">
-        <h1 className="mb-5 text-2xl font-bold text-(--foreground) border-b border-(--primary)">
-          Filtros
-        </h1>
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-(--border) bg-(--surface) px-4 py-3 text-sm font-semibold text-(--foreground)"
+          aria-expanded={mobileOpen}
+          aria-controls="mobile-product-filters"
+        >
+          <SlidersHorizontal size={18} />
+          Filtrar produtos
+        </button>
+      </div>
 
-        {filterContent}
-      </aside>
+      {/* Busca e filtros no desktop */}
+      <div className="hidden space-y-4 md:block">
+        {searchField}
 
-      {/* Painel móvel */}
+        <aside className="h-fit rounded-xl border border-(--border) bg-(--surface) p-5">
+          <h2 className="mb-5 text-lg font-bold text-(--foreground)">
+            Filtros
+          </h2>
+          {filterContent}
+        </aside>
+      </div>
+
+      {/* Painel de filtros no celular */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden">
           <button

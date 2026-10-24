@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Image from "next/image";
 
 import ProductsCatalog from "@/components/products/ProductsCatalog";
 import { Product } from "@/components/products/productCard";
@@ -77,13 +78,46 @@ async function ProductsContent({ searchParams }: ProductsPageProps) {
     : "";
 
   return (
-    <section className="container mx-auto px-4 py-8">
-      <div className="mb-6">
-        <h1 className="mb-2 text-2xl font-bold text-(--foreground) md:text-3xl">
+    <section className="relative container w-full overflow-hidden px-4 pb-8">
+      {/*------------------ Imagem desktop --------------------*/}
+
+      <div className="relative hidden w-full mb-8 md:block">
+        <Image
+          src="/images/products/banner-desktop-v2.png"
+          alt=""
+          width={2172}
+          height={379}
+          priority
+          sizes="100vw"
+          className="h-auto w-full"
+        />
+      </div>
+
+      {/*--------------------- Imagem mobile ------------------*/}
+
+      <div className="relative w-full mb-4 md:hidden">
+        <Image
+          src="/images/products/banner-mobile.png"
+          alt=""
+          width={971}
+          height={1619}
+          priority
+          sizes="100vw"
+          className="h-auto w-full"
+        />
+      </div>
+
+      {/*---------------------- Conteúdo ----------------------*/}
+
+      <div
+        className="absolute inset-0 z-10 p-8 pt-[20%]
+                         md:pt-[5%] lg:pt-[5%]"
+      >
+        <h1 className="mb-2 text-4xl font-bold text-(--foreground) md:text-4xl lg:text-5xl">
           {CATEGORY_LABELS[validCategory] ?? "Nossos produtos"}
         </h1>
 
-        <p className="text-sm text-(--muted) md:text-base">
+        <p className="text-md text-(--muted) md:text-base">
           {validCategory
             ? `Confira nossos ${CATEGORY_LABELS[validCategory].toLowerCase()}.`
             : "Confira nossos celulares, acessórios e eletrônicos."}

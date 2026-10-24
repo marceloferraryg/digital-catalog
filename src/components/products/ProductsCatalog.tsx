@@ -33,25 +33,30 @@ export default function ProductsCatalog({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const [searchTerm, setSearchTerm] = useState("");
+
   const [filters, setFilters] = useState<ProductFiltersState>(() => ({
     ...INITIAL_FILTERS,
     category: VALID_CATEGORIES.includes(initialCategory) ? initialCategory : "",
   }));
 
-  // Mantém a categoria sincronizada com a URL,
-  // inclusive quando o usuário usa voltar/avançar.
+  // Mantém a categoria sincronizada com a URL.
   useEffect(() => {
     const categoryFromUrl = searchParams.get("category")?.toLowerCase() ?? "";
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setFilters((current) => {
-      if (current.category === categoryFromUrl) return current;
+      const validCategory = VALID_CATEGORIES.includes(categoryFromUrl)
+        ? categoryFromUrl
+        : "";
+
+      if (current.category === validCategory) {
+        return current;
+      }
 
       return {
         ...current,
-        category: VALID_CATEGORIES.includes(categoryFromUrl)
-          ? categoryFromUrl
-          : "",
+        category: validCategory,
       };
     });
   }, [searchParams]);
@@ -68,6 +73,7 @@ export default function ProductsCatalog({
     }
 
     const query = params.toString();
+
     router.replace(query ? `${pathname}?${query}` : pathname, {
       scroll: false,
     });
@@ -75,47 +81,70 @@ export default function ProductsCatalog({
 
   function clearFilters() {
     setFilters(INITIAL_FILTERS);
+    setSearchTerm("");
 
     const params = new URLSearchParams(searchParams.toString());
     params.delete("category");
 
     const query = params.toString();
+
     router.replace(query ? `${pathname}?${query}` : pathname, {
       scroll: false,
     });
   }
 
   const filteredProducts = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLocaleLowerCase("pt-BR");
+
     const minPrice =
       filters.minPrice.trim() === "" ? null : Number(filters.minPrice);
+
     const maxPrice =
       filters.maxPrice.trim() === "" ? null : Number(filters.maxPrice);
 
     let result = products.filter((product) => {
+      // Busca pelo nome do produto.
+      if (
+        normalizedSearch &&
+        !product.name.toLocaleLowerCase("pt-BR").includes(normalizedSearch)
+      ) {
+        return false;
+      }
+
+      // Categoria.
       if (filters.category && product.category !== filters.category) {
         return false;
       }
 
+      // Marca.
       if (filters.brand && product.brand !== filters.brand) {
         return false;
       }
 
-      // Produtos sem preço não entram em uma faixa de preço.
+      // Faixa de preço.
+      // Produtos sem preço não entram na faixa selecionada.
       const price = product.price;
 
       if (minPrice !== null || maxPrice !== null) {
         if (price === null || price <= 0) return false;
-        if (minPrice !== null && price < minPrice) return false;
-        if (maxPrice !== null && price > maxPrice) return false;
+
+        if (minPrice !== null && price < minPrice) {
+          return false;
+        }
+
+        if (maxPrice !== null && price > maxPrice) {
+          return false;
+        }
       }
 
       return true;
     });
 
+    // Menor preço primeiro; produtos sem preço ficam no final.
     if (filters.sort === "price-asc") {
       result = [...result].sort((a, b) => {
-        const priceA = a.price && a.price > 0 ? a.price : null;
-        const priceB = b.price && b.price > 0 ? b.price : null;
+        const priceA = a.price !== null && a.price > 0 ? a.price : null;
+        const priceB = b.price !== null && b.price > 0 ? b.price : null;
 
         if (priceA === null && priceB === null) return 0;
         if (priceA === null) return 1;
@@ -125,10 +154,11 @@ export default function ProductsCatalog({
       });
     }
 
+    // Maior preço primeiro; produtos sem preço ficam no final.
     if (filters.sort === "price-desc") {
       result = [...result].sort((a, b) => {
-        const priceA = a.price && a.price > 0 ? a.price : null;
-        const priceB = b.price && b.price > 0 ? b.price : null;
+        const priceA = a.price !== null && a.price > 0 ? a.price : null;
+        const priceB = b.price !== null && b.price > 0 ? b.price : null;
 
         if (priceA === null && priceB === null) return 0;
         if (priceA === null) return 1;
@@ -139,18 +169,17 @@ export default function ProductsCatalog({
     }
 
     return result;
-  }, [products, filters]);
+  }, [products, filters, searchTerm]);
 
   const productCount = filteredProducts.length;
 
   return (
-    <div
-      className="grid grid-cols-1 gap-6 md:grid-cols-[280px_minmax(0,1fr)] 
-                        lg:grid-cols-[280px_minmax(0,1fr)] lg:gap-8"
-    >
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-[280px_minmax(0,1fr)] lg:gap-8">
       <ProductFilters
         filters={filters}
         brands={TEST_BRANDS}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
         onChange={handleFilterChange}
         onClear={clearFilters}
       />
@@ -164,10 +193,7 @@ export default function ProductsCatalog({
         </div>
 
         {productCount > 0 ? (
-          <div
-            className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-5 lg:grid-cols-3 
-                            xl:grid-cols-5"
-          >
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-5 lg:grid-cols-3 xl:grid-cols-5">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -179,7 +205,8 @@ export default function ProductsCatalog({
             </h2>
 
             <p className="mt-2 text-sm text-(--muted)">
-              Tente alterar os filtros para encontrar outros produtos.
+              Tente alterar a busca ou os filtros para encontrar outros
+              produtos.
             </p>
 
             <button
@@ -187,7 +214,7 @@ export default function ProductsCatalog({
               onClick={clearFilters}
               className="mt-5 rounded-lg bg-(--primary) px-4 py-2.5 text-sm font-semibold text-black"
             >
-              Limpar filtros
+              Limpar busca e filtros
             </button>
           </div>
         )}
