@@ -1,7 +1,11 @@
-export default function AssistancePage() {
+import HeroAssistence from "@/components/assistence/hero";
+import AssistenceCheckup from "@/components/assistence/AssistenceCheckup";
+
+export default function AssistencePage() {
   return (
-    <div>
-      <h1>ASSISTANCE PAGE</h1>
+    <div className="container">
+      <HeroAssistence />
+      <AssistenceCheckup />
     </div>
   );
 }

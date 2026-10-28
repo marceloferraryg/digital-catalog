@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { FaWhatsapp } from "react-icons/fa6";
 import { ChevronRight, Store } from "lucide-react";
 
-import ProductCard from "@/components/products/productCard";
+import ProductCard from "@/components/products/ProductCard";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import { siteConfig } from "@/config/site";
 import { getProducts } from "@/lib/supabase/products";

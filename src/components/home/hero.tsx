@@ -4,7 +4,7 @@ import { siteConfig } from "@/config/site";
 import { FaWhatsapp } from "react-icons/fa6";
 import { ArrowRight } from "lucide-react";
 
-export default function Hero() {
+export default function HeroHome() {
   return (
     <section className="relative w-full overflow-hidden">
       {/*------------------ Imagem desktop --------------------*/}

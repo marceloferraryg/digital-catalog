@@ -4,7 +4,7 @@ import { SetStateAction, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Rows3, Grid2x2 } from "lucide-react";
 
-import ProductCard, { type Product } from "@/components/products/productCard";
+import ProductCard, { type Product } from "@/components/products/ProductCard";
 import ProductFilters, {
   type ProductFiltersState,
 } from "@/components/products/ProductFilters";
