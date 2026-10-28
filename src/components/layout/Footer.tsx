@@ -35,7 +35,7 @@ export default function FooterStore() {
   return (
     <footer
       className="container bg-(--background) items-center justify-center 
-                  flex flex-col gap-4 border-t border-(--border)"
+                  flex flex-col gap-4 border-t border-(--border) mt-16"
     >
       <div className="flex flex-col items-center justify-center gap-4 mt-4 md:justify-around ">
         <div className="flex flex-col justify-center items-center md:flex-row md:w-full md:justify-around">

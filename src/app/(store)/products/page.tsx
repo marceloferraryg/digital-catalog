@@ -1,67 +1,16 @@
 import { Suspense } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 
 import ProductsCatalog from "@/components/products/ProductsCatalog";
-import { Product } from "@/components/products/productCard";
+import { getProducts } from "@/lib/supabase/products";
 
 type ProductsPageProps = {
   searchParams: Promise<{
     category?: string;
   }>;
 };
-
-const PRODUCTS: Product[] = [
-  {
-    id: "1",
-    name: "Smartphone Exemplo 128 GB",
-    slug: "smartphone-exemplo-128gb",
-    price: 1499.9,
-    image: "/images/products/celular01.jpg",
-    category: "celulares",
-    brand: "Marca Exemplo",
-    available: true,
-  },
-  {
-    id: "2",
-    name: "Smartphone Exemplo 128 GB",
-    slug: "smartphone-exemplo-128gb-eletronicos",
-    price: 399.9,
-    image: "/images/products/celular03.png",
-    category: "eletronicos",
-    brand: "Samsung",
-    available: false,
-  },
-  {
-    id: "3",
-    name: "Smartphone Exemplo 128 GB",
-    slug: "smartphone-exemplo-128gb-acessorios",
-    price: 3499.9,
-    image: "/images/products/celular02.webp",
-    category: "acessorios",
-    brand: "Xiaomi",
-    available: false,
-  },
-  {
-    id: "4",
-    name: "Smartphone Exemplo",
-    slug: "smartphone-exemplo-consulte-preco",
-    price: 0,
-    image: "/images/products/celular04.avif",
-    category: "celulares",
-    brand: "Motorola",
-    available: true,
-  },
-  {
-    id: "5",
-    name: "Smartphone Exemplo 128 GB camera 64px preto",
-    slug: "smartphone-exemplo-128gb-camera-64px-preto",
-    price: 1239.45,
-    image: "/images/products/celular05.avif",
-    category: "celulares",
-    brand: "Apple",
-    available: true,
-  },
-];
 
 const CATEGORY_LABELS: Record<string, string> = {
   celulares: "Celulares",
@@ -71,31 +20,46 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 async function ProductsContent({ searchParams }: ProductsPageProps) {
   const { category } = await searchParams;
+  const products = await getProducts();
+
   const normalizedCategory = category?.toLowerCase() ?? "";
 
   const validCategory = Object.hasOwn(CATEGORY_LABELS, normalizedCategory)
     ? normalizedCategory
     : "";
 
-  return (
-    <section className="relative container w-full overflow-hidden px-4 pb-8">
-      {/*------------------ Imagem desktop --------------------*/}
+  const title = CATEGORY_LABELS[validCategory] ?? "Nossos produtos";
 
-      <div className="relative hidden w-full mb-8 md:block">
+  const description = validCategory
+    ? `Confira nossos ${title.toLowerCase()}.`
+    : "Confira nossos celulares, acessórios e eletrônicos.";
+
+  // Mantenha aqui o restante do código atual...
+
+  return (
+    <section className="container mx-auto w-full px-4 pb-8">
+      {/* Banner desktop */}
+      <div className="relative mb-8 hidden w-full md:block">
         <Image
           src="/images/products/banner-desktop-v2.png"
           alt=""
           width={2172}
           height={379}
           priority
-          sizes="100vw"
+          sizes="(min-width: 768px) 100vw, 0px"
           className="h-auto w-full"
         />
+
+        <div className="pointer-events-none absolute inset-x-0 top-0 p-8 pt-[5%] lg:pt-[5%]">
+          <h1 className="mb-2 text-4xl font-bold text-(--foreground) lg:text-5xl">
+            {title}
+          </h1>
+          <p className="text-base text-(--foreground)/90">{description}</p>
+        </div>
       </div>
 
-      {/*--------------------- Imagem mobile ------------------*/}
-
-      <div className="relative w-full mb-4 md:hidden">
+      {/* Banner mobile */}
+      <div className="relative mb-4 md:hidden">
         <Image
           src="/images/products/banner-mobile.png"
           alt=""
@@ -105,26 +69,39 @@ async function ProductsContent({ searchParams }: ProductsPageProps) {
           sizes="100vw"
           className="h-auto w-full"
         />
+
+        <div className="pointer-events-none absolute inset-x-0 top-0 p-8 pt-[20%]">
+          <h1 className="mb-2 text-4xl font-bold text-(--foreground)">
+            {title}
+          </h1>
+          <p className="text-sm text-(--foreground)/90">{description}</p>
+        </div>
       </div>
 
-      {/*---------------------- Conteúdo ----------------------*/}
-
-      <div
-        className="absolute inset-0 z-10 p-8 pt-[20%]
-                         md:pt-[5%] lg:pt-[5%]"
+      <nav
+        aria-label="Navegação estrutural"
+        className="mb-5 flex flex-wrap items-center gap-1 text-sm text-(--muted)"
       >
-        <h1 className="mb-2 text-4xl font-bold text-(--foreground) md:text-4xl lg:text-5xl">
-          {CATEGORY_LABELS[validCategory] ?? "Nossos produtos"}
-        </h1>
+        <Link href="/" className="hover:text-(--primary)">
+          Início
+        </Link>
 
-        <p className="text-md text-(--muted) md:text-base">
-          {validCategory
-            ? `Confira nossos ${CATEGORY_LABELS[validCategory].toLowerCase()}.`
-            : "Confira nossos celulares, acessórios e eletrônicos."}
-        </p>
-      </div>
+        <ChevronRight size={15} aria-hidden="true" />
 
-      <ProductsCatalog products={PRODUCTS} initialCategory={validCategory} />
+        {validCategory ? (
+          <>
+            <Link href="/products" className="hover:text-(--primary)">
+              Produtos
+            </Link>
+            <ChevronRight size={15} aria-hidden="true" />
+            <span className="text-(--foreground)">{title}</span>
+          </>
+        ) : (
+          <span className="text-(--foreground)">Produtos</span>
+        )}
+      </nav>
+
+      <ProductsCatalog products={products} initialCategory={validCategory} />
     </section>
   );
 }
@@ -134,7 +111,9 @@ export default function ProductsPage({ searchParams }: ProductsPageProps) {
     <Suspense
       fallback={
         <section className="container mx-auto px-4 py-8">
-          <p className="text-(--muted)">Carregando produtos...</p>
+          <p className="text-(--muted)" role="status">
+            Carregando produtos...
+          </p>
         </section>
       }
     >

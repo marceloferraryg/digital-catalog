@@ -4,6 +4,7 @@ import withSerwist from "@serwist/next";
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
+  allowedDevOrigins: ["192.168.0.108"],
 };
 
 const withSerwistConfig = withSerwist({

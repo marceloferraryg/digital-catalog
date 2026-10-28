@@ -59,9 +59,9 @@ export default function Categories() {
 
               <div className="flex items-center justify-between gap-2 p-3 lg:p-4">
                 <div>
-                  <h3 className="font-semibold text-(--foreground)">
+                  <h2 className="font-semibold text-(--foreground) text-md md:text-xl lg:text-2xl">
                     {category.title}
-                  </h3>
+                  </h2>
                   <p className="mt-1 hidden text-sm text-(--muted) md:block">
                     {category.description}
                   </p>
