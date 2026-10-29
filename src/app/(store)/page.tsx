@@ -1,11 +1,13 @@
-import HeroHome from "../../components/home/hero";
-import Categories from "@/components/home/categories";
+import HeroHome from "../../components/home/Hero";
+import Categories from "@/components/home/Categories";
+import AssistenceHome from "@/components/home/assistence";
 
 export default function Home() {
   return (
-    <div className="container ">
+    <div className="container">
       <HeroHome />
       <Categories />
+      <AssistenceHome />
     </div>
   );
 }

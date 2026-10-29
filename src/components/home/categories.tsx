@@ -21,25 +21,64 @@ const CATEGORIES = [
     image: "/images/home/categories/eletronicos.png",
     href: "/products?category=eletronicos",
   },
-  {
-    title: "Assistência técnica",
-    description: "Cuidado e manutenção para seu aparelho.",
-    image: "/images/home/categories/assistencia.png",
-    href: "/assistence",
-  },
 ];
 
 export default function Categories() {
   return (
     <section className="p-4 lg:p-8 mb-8">
-      <div className="">
+      <div>
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-(--foreground) lg:text-3xl">
-            Explore nossas categorias
+            Explore nossos produtos
           </h2>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {/*--------- MOBILE ----------*/}
+
+        <div className="flex flex-col gap-4 md:hidden">
+          {CATEGORIES.map((category) => (
+            <Link
+              key={category.title}
+              href={category.href}
+              className="group flex min-h-28 w-full overflow-hidden rounded-xl 
+                          border border-(--border) bg-(--surface) transition-colors hover:border-(--primary)"
+            >
+              {/* Imagem à esquerda */}
+              <div className="relative w-48 shrink-0 overflow-hidden sm:w-60 sm:h-36">
+                <Image
+                  src={category.image}
+                  alt={category.title}
+                  fill
+                  sizes="(max-width: 639px) 192px, 192px"
+                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+
+              {/* Texto à direita */}
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-2 px-4 sm:px-8">
+                <div className="min-w-0">
+                  <h2 className="text-base mb-2 font-semibold text-(--foreground) sm:text-lg">
+                    {category.title}
+                  </h2>
+
+                  <p className="text-xs text-(--muted) sm:text-sm">
+                    {category.description}
+                  </p>
+                </div>
+
+                <ArrowUpRight
+                  size={24}
+                  className="shrink-0 text-(--primary) transition-transform 
+                              group-hover:translate-x-1 group-hover:-translate-y-1"
+                />
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/*---------DESKTOP ---------- */}
+
+        <div className="hidden grid-cols-2 gap-4 lg:grid-cols-4 md:grid">
           {CATEGORIES.map((category) => (
             <Link
               key={category.title}

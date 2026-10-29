@@ -1,4 +1,4 @@
-import HeroAssistence from "@/components/assistence/hero";
+import HeroAssistence from "@/components/assistence/Hero";
 import AssistenceCheckup from "@/components/assistence/AssistenceCheckup";
 
 export default function AssistencePage() {
