@@ -1,16 +1,25 @@
 import Image from "next/image";
 import Link from "next/link";
+
 import {
   ArrowRight,
   Clock3,
   MapPin,
-  MessageCircle,
   Phone,
   ShieldCheck,
   Store,
   Headset,
   Zap,
+  Share2,
 } from "lucide-react";
+
+import {
+  FaInstagram,
+  FaFacebook,
+  FaTiktok,
+  FaYoutube,
+  FaWhatsapp,
+} from "react-icons/fa6";
 
 import { siteConfig } from "@/config/site";
 
@@ -18,12 +27,23 @@ const STORE_IMAGE = "";
 // Exemplo futuro: "/images/contact/store.jpg"
 
 const STORE = {
-  phone: "", // Informe o telefone da loja
-  address: "", // Informe a rua e o número
-  city: "Faxinal - PR",
-  zipCode: "", // Informe o CEP
-  hours: ["Segunda a sexta: 08h às 18h", "Sábado: 08h às 12h"],
+  phone: siteConfig.whatsapp,
+  address: siteConfig.address.street,
+  city: siteConfig.address.city,
+  zipCode: siteConfig.address.zipCode,
+  hours: [siteConfig.hours.mondayToFriday, siteConfig.hours.saturday],
 };
+
+const SOCIALS = [
+  {
+    label: "Instagram",
+    href: siteConfig.socials.instagram,
+    icon: FaInstagram,
+  },
+  { label: "Facebook", href: siteConfig.socials.facebook, icon: FaFacebook },
+  { label: "TikTok", href: siteConfig.socials.tiktok, icon: FaTiktok },
+  { label: "YouTube", href: siteConfig.socials.youtube, icon: FaYoutube },
+];
 
 function getWhatsAppUrl() {
   const phone = String(siteConfig.whatsappButton ?? "").replace(/\D/g, "");
@@ -49,7 +69,7 @@ const BENEFITS = [
   {
     icon: Store,
     title: "Loja física",
-    description: "Atendimento presencial em Faxinal - PR.",
+    description: `Atendimento presencial em ${STORE.city}.`,
   },
   {
     icon: Headset,
@@ -66,11 +86,13 @@ export default function ContactPage() {
     .join(", ");
 
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    addressQuery || "S.A Smart, Faxinal, Paraná, Brasil",
+    addressQuery ||
+      `${siteConfig.name}, ${siteConfig.address.city}, ${siteConfig.address.state}, Brasil`,
   )}`;
 
   const mapsEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(
-    addressQuery || "Faxinal, Paraná, Brasil",
+    addressQuery ||
+      `${siteConfig.name}, ${siteConfig.address.city}, ${siteConfig.address.state}, Brasil`,
   )}&output=embed`;
 
   return (
@@ -103,12 +125,12 @@ export default function ContactPage() {
             <h1 className="text-4xl font-bold leading-tight text-(--foreground) sm:text-5xl lg:text-6xl">
               Fale com a
               <br />
-              S.A <span className="text-(--primary)">Smart</span>
+              <span className="text-(--primary)">S.A Smart</span>
             </h1>
 
             <p className="mt-5 max-w-xl text-base leading-7 text-(--muted) sm:text-lg">
               Estamos prontos para atender! Entre em contato pelo WhatsApp,
-              telefone ou visite nossa loja em Faxinal.
+              telefone ou visite nossa loja em {siteConfig.address.city}.
             </p>
           </div>
         </div>
@@ -131,10 +153,7 @@ export default function ContactPage() {
               {/* WHATSAPP */}
               <div className="flex flex-col rounded-xl border border-(--primary) bg-(--background) p-5">
                 <div className="flex items-center gap-3">
-                  <MessageCircle
-                    size={34}
-                    className="shrink-0 text-(--primary)"
-                  />
+                  <FaWhatsapp size={34} className="shrink-0 text-(--primary)" />
 
                   <h3 className="text-lg font-bold text-(--foreground)">
                     WhatsApp
@@ -146,21 +165,18 @@ export default function ContactPage() {
                 </p>
 
                 <div className="mt-auto pt-5">
-                  {whatsappUrl !== "#" ? (
-                    <a
-                      href={whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-(--primary) px-4 py-3 text-sm font-bold text-black transition-opacity hover:opacity-90"
-                    >
+                  <Link
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg 
+                                  bg-(--whatsapp) px-4 py-3 transition-opacity hover:opacity-90"
+                  >
+                    <span className="text-black font-bold text-sm">
                       Conversar agora
-                      <ArrowRight size={18} />
-                    </a>
-                  ) : (
-                    <p className="text-xs text-(--muted)">
-                      Configure o WhatsApp em siteConfig.
-                    </p>
-                  )}
+                    </span>
+                    <ArrowRight size={18} color="black" />
+                  </Link>
                 </div>
               </div>
 
@@ -179,18 +195,43 @@ export default function ContactPage() {
                 </p>
 
                 <div className="mt-auto pt-5">
-                  {STORE.phone ? (
-                    <a
-                      href={`tel:${STORE.phone.replace(/[^\d+]/g, "")}`}
-                      className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-(--border) bg-(--surface) px-3 py-3 text-sm font-semibold text-(--foreground) transition-colors hover:border-(--primary)"
+                  <div className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-(--border) bg-(--surface) px-3 py-3 text-sm font-semibold text-(--foreground) transition-colors hover:border-(--primary)">
+                    {STORE.phone}
+                  </div>
+                </div>
+              </div>
+
+              {/* REDES SOCIAIS */}
+              <div className="flex flex-col rounded-xl border border-(--border) bg-(--background) p-5">
+                <div className="flex items-center gap-3">
+                  <Share2 size={32} className="shrink-0 text-(--primary)" />
+
+                  <h3 className="text-lg font-bold text-(--foreground)">
+                    Redes Sociais
+                  </h3>
+                </div>
+
+                <p className="mt-4 text-sm leading-6 text-(--muted)">
+                  Siga-nos nas redes sociais!
+                </p>
+
+                <div className="flex gap-6 justify-center items-center p-6">
+                  {SOCIALS.map((social) => (
+                    <Link
+                      key={social.label}
+                      href={social.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={social.label}
+                      className="group hover:text-(--primary) transition-colors w-10 h-10
+                                justify-center items-center flex"
                     >
-                      {STORE.phone}
-                    </a>
-                  ) : (
-                    <p className="text-xs text-(--muted)">
-                      Telefone a configurar.
-                    </p>
-                  )}
+                      <social.icon
+                        size={32}
+                        className="text-(--foreground) group-hover:text-(--primary) transition-colors"
+                      />
+                    </Link>
+                  ))}
                 </div>
               </div>
             </div>
@@ -199,8 +240,11 @@ export default function ContactPage() {
           {/* LOJA E MAPA */}
           <div className="rounded-2xl border border-(--border) bg-(--surface) p-5 sm:p-7">
             <div className="flex items-center gap-3">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-(--primary)/10 text-(--primary)">
-                <Store size={23} />
+              <div
+                className="flex size-11 shrink-0 items-center justify-center rounded-xl 
+                              text-(--primary)"
+              >
+                <Store size={32} />
               </div>
 
               <div>
@@ -215,18 +259,20 @@ export default function ContactPage() {
             </div>
 
             <div className="mt-5 flex items-start gap-3 rounded-xl border border-(--border) bg-(--background) p-4">
-              <MapPin size={23} className="mt-0.5 shrink-0 text-(--primary)" />
+              <MapPin size={24} className="mt-0.5 shrink-0 text-(--primary)" />
 
-              <div className="min-w-0 text-sm leading-6 text-(--muted)">
+              <div className="min-w-0 text-md leading-6 text-(--muted)">
                 {STORE.address && (
                   <p className="font-semibold text-(--foreground)">
                     {STORE.address}
                   </p>
                 )}
 
-                <p>{STORE.city}</p>
+                <p className="text-sm">{STORE.city}</p>
 
-                {STORE.zipCode && <p>CEP {STORE.zipCode}</p>}
+                {STORE.zipCode && (
+                  <p className="text-sm">CEP {STORE.zipCode}</p>
+                )}
 
                 {!STORE.address && (
                   <p className="text-xs">Endereço completo a configurar.</p>
@@ -249,7 +295,11 @@ export default function ContactPage() {
                 referrerPolicy="no-referrer-when-downgrade"
               />
 
-              <span className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 bg-black/75 px-4 py-3 text-sm font-semibold text-white opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+              <span
+                className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 
+                              bg-black/75 px-4 py-3 text-sm font-semibold text-white opacity-100 
+                                transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
+              >
                 <MapPin size={17} className="text-(--primary)" />
                 Abrir no Google Maps
                 <ArrowRight size={16} />
@@ -277,22 +327,22 @@ export default function ContactPage() {
 
       {/* DIFERENCIAIS */}
       <section className="mx-auto mt-8 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 gap-5 border-t border-(--border) pt-7 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-6 border-t border-(--border) pt-7 lg:grid-cols-4">
           {BENEFITS.map((benefit) => {
             const Icon = benefit.icon;
 
             return (
-              <div key={benefit.title} className="flex items-start gap-3">
+              <div key={benefit.title} className="flex items-start gap-2">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-(--primary)/10 text-(--primary)">
-                  <Icon size={22} />
+                  <Icon size={24} />
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold text-(--foreground)">
+                  <h3 className="text-sm font-bold text-(--foreground) mb-2">
                     {benefit.title}
                   </h3>
 
-                  <p className="mt-1 text-xs leading-5 text-(--muted) sm:text-sm">
+                  <p className="text-xs leading-4 text-(--muted) sm:text-sm">
                     {benefit.description}
                   </p>
                 </div>
@@ -304,7 +354,10 @@ export default function ContactPage() {
 
       {/* CTA FINAL */}
       <section className="mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-start justify-between gap-5 rounded-2xl border border-(--border) bg-(--surface) p-6 sm:flex-row sm:items-center sm:p-8">
+        <div
+          className="flex flex-col  gap-5 rounded-2xl border border-(--border) bg-(--surface) p-6 
+                          sm:flex-row sm:items-center sm:p-8 sm:gap-12"
+        >
           <div>
             <h2 className="text-xl font-bold text-(--foreground) sm:text-2xl">
               Podemos ajudar você?
@@ -315,18 +368,19 @@ export default function ContactPage() {
             </p>
           </div>
 
-          {whatsappUrl !== "#" && (
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-(--primary) px-6 py-3 font-bold text-black transition-opacity hover:opacity-90 sm:w-auto"
-            >
-              <MessageCircle size={20} />
-              Falar pelo WhatsApp
-              <ArrowRight size={18} />
-            </a>
-          )}
+          <Link
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg 
+                                  bg-(--whatsapp) px-4 py-3 transition-opacity hover:opacity-90"
+          >
+            <FaWhatsapp size={34} className="shrink-0 text-black" />
+            <span className="text-black font-bold text-sm">
+              Conversar agora
+            </span>
+            <ArrowRight size={18} color="black" />
+          </Link>
         </div>
       </section>
     </main>

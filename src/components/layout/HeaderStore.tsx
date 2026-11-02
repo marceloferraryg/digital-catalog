@@ -202,7 +202,7 @@ export default function HeaderStore() {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="WhatsApp"
-              className="flex items-center justify-center gap-2 bg-(--whatsapp) p-1 rounded-md"
+              className="flex items-center justify-center gap-2 bg-(--whatsapp) px-4 py-1 rounded-md"
             >
               <FaWhatsapp size={24} color="black" />
               <span
