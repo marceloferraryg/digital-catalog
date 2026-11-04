@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { getAdminUser } from "@/lib/supabase/auth";
+import AdminShell from "@/components/admin/AdminShell";
 
 export const instant = false;
 
@@ -15,9 +16,5 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
     redirect("/admin/login");
   }
 
-  return (
-    <div className="min-h-screen bg-(--background) text-(--foreground)">
-      {children}
-    </div>
-  );
+  return <AdminShell admin={admin}>{children}</AdminShell>;
 }
