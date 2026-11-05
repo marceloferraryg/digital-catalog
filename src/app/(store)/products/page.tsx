@@ -6,6 +6,8 @@ import { ChevronRight } from "lucide-react";
 import ProductsCatalog from "@/components/products/ProductsCatalog";
 import { getProducts } from "@/lib/supabase/products";
 
+import { connection } from "next/server";
+
 type ProductsPageProps = {
   searchParams: Promise<{
     category?: string;
@@ -19,6 +21,8 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 async function ProductsContent({ searchParams }: ProductsPageProps) {
+  await connection();
+
   const { category } = await searchParams;
   const products = await getProducts();
 
