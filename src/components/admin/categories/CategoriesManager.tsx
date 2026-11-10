@@ -375,34 +375,36 @@ export default function CategoriesManager({
   );
 
   return (
-    <div className="mx-auto max-w-7xl">
+    <div className="mx-auto max-w-7xl mb-8">
       {/* Cabeçalho */}
       <div className="mb-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-(--foreground)">
-              Categorias
-            </h1>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-2xl font-bold text-(--foreground)">Categorias</h1>
 
-            <p className="mt-2 text-sm text-(--muted)">
-              Gerencie as categorias do catálogo.
-            </p>
-          </div>
-
-          <span className="w-fit rounded-full border border-(--border) px-4 py-2 text-sm font-medium text-(--muted)">
-            {categories.length} de 8 categorias
-          </span>
+          <p className="text-sm text-(--muted)">
+            As categorias organizam os produtos do catálogo por grupos,
+            facilitando a navegação dos clientes e a localização dos produtos.
+          </p>
         </div>
       </div>
 
-      {/* Cadastro */}
+      {/* -------------------- Cadastro ---------------------*/}
       {!orderingMode && (
         <div className="mb-8 rounded-xl border border-(--border) bg-(--surface) p-5">
-          <h2 className="mb-4 font-semibold">Adicionar categoria</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold">Adicionar categoria</h2>
+
+            <span
+              className="w-fit rounded-full border border-(--border) px-4 py-2 
+                              text-sm font-medium text-(--muted) bg-(--background)"
+            >
+              {categories.length} de 8 categorias
+            </span>
+          </div>
 
           <form
             onSubmit={handleCreate}
-            className="flex flex-col gap-3 sm:flex-row"
+            className="flex flex-col gap-3 sm:flex-row mb-3"
           >
             <input
               type="text"
@@ -411,16 +413,19 @@ export default function CategoriesManager({
                 setNewName(event.target.value);
                 setCreateError("");
               }}
-              placeholder="Digite o nome da categoria"
+              placeholder={`${categories.length === 8 ? "Limite de categorias atingido" : "Digite o nome da categoria"}`}
               maxLength={40}
               disabled={limitReached || creating}
-              className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) px-4 py-3 text-sm text-(--foreground) outline-none transition focus:border-(--primary) disabled:opacity-50"
+              className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) px-4 py-3 
+                          text-sm text-(--foreground) outline-none transition disabled:opacity-50"
             />
 
             <button
               type="submit"
               disabled={limitReached || creating || !newName.trim()}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) px-6 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) px-6 py-3 
+                          text-sm font-semibold text-black transition hover:opacity-90 
+                          disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus size={18} />
               {creating ? "Adicionando..." : "Adicionar"}
@@ -434,7 +439,7 @@ export default function CategoriesManager({
           )}
 
           {limitReached && (
-            <p className="mt-3 text-sm text-(--muted)">
+            <p className="text-sm text-(--muted)">
               Você atingiu o limite de 8 categorias. Exclua uma categoria para
               adicionar outra.
             </p>
@@ -442,19 +447,17 @@ export default function CategoriesManager({
         </div>
       )}
 
-      {/* Listagem */}
-      <div className="overflow-hidden rounded-xl border border-(--border) bg-(--surface)">
-        <div className="flex flex-col gap-3 border-b border-(--border) px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* -------------------- Listagem --------------------*/}
+      <div className="overflow-hidden rounded-lg border border-(--border) bg-(--surface)">
+        <div
+          className="flex flex-col gap-3 border-b border-(--border) px-5 py-4 
+                          sm:flex-row sm:items-center sm:justify-between"
+        >
           <div>
-            <h2 className="font-semibold">
-              Categorias cadastradas
-              <span className="ml-2 text-sm font-normal text-(--muted)">
-                ({categories.length})
-              </span>
-            </h2>
+            <h2 className="mb-2 font-semibold">Categorias cadastradas</h2>
 
             {orderingMode && (
-              <p className="mt-1 text-xs text-(--muted)">
+              <p className="mb-4 text-xs text-(--muted)">
                 Arraste as categorias para alterar a ordem.
               </p>
             )}
@@ -467,7 +470,9 @@ export default function CategoriesManager({
                   type="button"
                   onClick={cancelOrdering}
                   disabled={savingOrder}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-(--border) px-4 py-2.5 text-sm font-medium transition hover:bg-(--background) disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg 
+                              border border-(--border) px-4 py-2.5 text-sm font-medium transition 
+                              bg-(--background) hover:bg-(--surface-hover) disabled:opacity-50"
                 >
                   <X size={16} />
                   Cancelar
@@ -477,17 +482,21 @@ export default function CategoriesManager({
                   type="button"
                   onClick={saveOrder}
                   disabled={!orderChanged || savingOrder}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) px-4 py-2.5 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) 
+                              px-8 py-2.5 text-sm font-semibold text-black transition 
+                              hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Save size={16} />
-                  {savingOrder ? "Salvando..." : "Salvar alterações"}
+                  {savingOrder ? "Salvando..." : "Salvar"}
                 </button>
               </div>
             ) : (
               <button
                 type="button"
                 onClick={startOrdering}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-(--border) px-4 py-2.5 text-sm font-medium transition hover:bg-(--background)"
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-(--border) 
+                            px-4 py-2.5 text-sm font-medium transition 
+                            bg-(--background) hover:bg-(--surface-hover) disabled:opacity-50"
               >
                 <ArrowUpDown size={16} />
                 Organizar categorias
@@ -547,15 +556,19 @@ export default function CategoriesManager({
                   handleDrop(category.id);
                 }}
                 onDragEnd={() => setDraggedId(null)}
-                className={`flex flex-col gap-3 px-5 py-4 transition sm:flex-row sm:items-center sm:justify-between ${
-                  orderingMode && draggedId === category.id ? "opacity-40" : ""
-                } ${
-                  orderingMode
-                    ? "bg-(--background)/40"
-                    : "hover:bg-(--background)/30"
-                }`}
+                className={`flex flex-col gap-3 px-5 py-4 transition sm:flex-row sm:items-center 
+                              sm:justify-between ${
+                                orderingMode && draggedId === category.id
+                                  ? "opacity-30"
+                                  : ""
+                              } ${
+                                orderingMode
+                                  ? "bg-(--background)/40"
+                                  : "hover:bg-(--background)/30"
+                              }`}
               >
-                {/* Nome e alça de arraste */}
+                {/*  --------------------Nome e alça de arraste  --------------------*/}
+
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                   {orderingMode && (
                     <button
@@ -586,18 +599,20 @@ export default function CategoriesManager({
                         maxLength={80}
                         autoFocus
                         disabled={updating}
-                        className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm outline-none focus:border-(--primary)"
+                        className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) 
+                                    px-3 py-2 text-sm outline-none "
                       />
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-4 items-center justify-end mt-1 sm:mt-0 sm:ml-2">
                         <button
                           type="submit"
                           disabled={updating || !editingName.trim()}
                           title="Salvar nome"
                           aria-label="Salvar nome"
-                          className="rounded-lg bg-(--primary) p-2 text-black transition hover:opacity-90 disabled:opacity-50"
+                          className="rounded-full w-10 h-10 bg-(--primary) p-2 text-black transition 
+                                      hover:opacity-90 disabled:opacity-50 items-center justify-center flex"
                         >
-                          <Check size={18} />
+                          <Check size={18} color="black" strokeWidth={3} />
                         </button>
 
                         <button
@@ -606,9 +621,10 @@ export default function CategoriesManager({
                           disabled={updating}
                           title="Cancelar edição"
                           aria-label="Cancelar edição"
-                          className="rounded-lg border border-(--border) p-2 transition hover:bg-(--background)"
+                          className="rounded-full w-10 h-10 border border-(--border) p-2 transition 
+                                      hover:bg-(--background) items-center justify-center flex"
                         >
-                          <X size={18} />
+                          <X size={18} color="white" strokeWidth={3} />
                         </button>
                       </div>
                     </form>
@@ -619,46 +635,49 @@ export default function CategoriesManager({
                   )}
                 </div>
 
-                {/* Status e ações */}
+                {/*  --------------------Status e ações  --------------------*/}
+
                 {!orderingMode && editingId !== category.id && (
                   <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={category.active}
-                      aria-label={`Categoria ${category.name}: ${
-                        category.active ? "ativa" : "inativa"
-                      }`}
-                      disabled={
-                        changingStatusId === category.id ||
-                        deletingId === category.id ||
-                        editingId !== null
-                      }
-                      onClick={() => handleToggleStatus(category)}
-                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50 ${
-                        category.active ? "bg-green-500" : "bg-gray-500"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block size-4 rounded-full bg-white transition-transform ${
-                          category.active ? "translate-x-6" : "translate-x-1"
+                    <div className="flex items-center gap-4 mr-4">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={category.active}
+                        aria-label={`Categoria ${category.name}: ${
+                          category.active ? "ativa" : "inativa"
                         }`}
-                      />
-                    </button>
+                        disabled={
+                          changingStatusId === category.id ||
+                          deletingId === category.id ||
+                          editingId !== null
+                        }
+                        onClick={() => handleToggleStatus(category)}
+                        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                          category.active ? "bg-green-500" : "bg-gray-500"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block size-4 rounded-full bg-white transition-transform ${
+                            category.active ? "translate-x-6" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
 
-                    <span
-                      className={`w-14 text-xs font-medium ${
-                        category.active ? "text-green-500" : "text-(--muted)"
-                      }`}
-                    >
-                      {changingStatusId === category.id
-                        ? "Salvando..."
-                        : category.active
-                          ? "Ativa"
-                          : "Inativa"}
-                    </span>
+                      <span
+                        className={`w-16 text-sm font-medium ${
+                          category.active ? "text-green-500" : "text-(--muted)"
+                        }`}
+                      >
+                        {changingStatusId === category.id
+                          ? "Salvando..."
+                          : category.active
+                            ? "Ativa"
+                            : "Inativa"}
+                      </span>
+                    </div>
 
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-4">
                       <button
                         type="button"
                         onClick={() => startEditing(category)}
@@ -669,9 +688,9 @@ export default function CategoriesManager({
                         }
                         title="Editar categoria"
                         aria-label={`Editar ${category.name}`}
-                        className="rounded-lg p-2 text-(--muted) transition hover:bg-(--background) hover:text-(--foreground) disabled:opacity-40"
+                        className="rounded-full w-10 h-10 p-2 text-(--muted) transition hover:bg-(--background) hover:text-(--foreground) disabled:opacity-40"
                       >
-                        <Pencil size={17} />
+                        <Pencil size={20} />
                       </button>
 
                       <button
@@ -684,9 +703,9 @@ export default function CategoriesManager({
                         }
                         title="Excluir categoria"
                         aria-label={`Excluir ${category.name}`}
-                        className="rounded-lg p-2 text-(--muted) transition hover:bg-red-500/10 hover:text-red-500 disabled:opacity-40"
+                        className="rounded-full w-10 h-10 p-2 text-(--muted) transition hover:bg-red-500/10 hover:text-red-500 disabled:opacity-40"
                       >
-                        <Trash2 size={17} />
+                        <Trash2 size={20} />
                       </button>
                     </div>
 
@@ -698,7 +717,7 @@ export default function CategoriesManager({
                   </div>
                 )}
 
-                {/* Controles alternativos de ordenação */}
+                {/*  -------------------- Controles alternativos de ordenação  -------------------- */}
                 {orderingMode && (
                   <div className="flex items-center justify-end gap-2">
                     <button
