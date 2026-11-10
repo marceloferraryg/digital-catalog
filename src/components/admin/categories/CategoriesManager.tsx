@@ -1,8 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X } from "lucide-react";
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  GripVertical,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
+  Check,
+  X,
+  Save,
+} from "lucide-react";
 
 type Category = {
   id: string;
@@ -17,60 +28,92 @@ type CategoriesManagerProps = {
   initialCategories: Category[];
 };
 
-function generateSlug(name: string) {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 export default function CategoriesManager({
   initialCategories,
 }: CategoriesManagerProps) {
   const router = useRouter();
 
   const [categories, setCategories] = useState(initialCategories);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [sortOrder, setSortOrder] = useState("0");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
 
-  const slugPreview = useMemo(() => generateSlug(name), [name]);
+  // Cadastro
+  const [newName, setNewName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState("");
 
-  function openModal() {
-    setName("");
-    setSortOrder("0");
-    setError("");
-    setModalOpen(true);
+  // Edição
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState("");
+  const [updating, setUpdating] = useState(false);
+
+  // Exclusão
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Status
+  const [changingStatusId, setChangingStatusId] = useState<string | null>(null);
+
+  // Ordenação
+  const [orderingMode, setOrderingMode] = useState(false);
+  const [originalOrder, setOriginalOrder] = useState<Category[]>([]);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [orderError, setOrderError] = useState("");
+
+  const [generalError, setGeneralError] = useState("");
+
+  const limitReached = categories.length >= 8;
+
+  // Requisição de atualização
+  async function updateCategory(
+    id: string,
+    updates: { name?: string; active?: boolean },
+  ) {
+    const response = await fetch("/api/admin/categories", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        action: "update",
+        id,
+        ...updates,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || "Não foi possível atualizar a categoria.",
+      );
+    }
+
+    return result.category as Category;
   }
 
-  function closeModal() {
-    if (loading) return;
-    setModalOpen(false);
-  }
-
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  // Cadastrar categoria
+  async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setError("");
 
-    const trimmedName = name.trim();
-    const order = Number(sortOrder);
+    setCreateError("");
 
-    if (!trimmedName) {
-      setError("Informe o nome da categoria.");
+    const name = newName.trim();
+
+    if (!name) {
+      setCreateError("Informe o nome da categoria.");
       return;
     }
 
-    if (!Number.isInteger(order) || order < 0) {
-      setError("Informe uma ordem válida.");
+    if (name.length > 40) {
+      setCreateError("O nome pode ter no máximo 40 caracteres.");
       return;
     }
 
-    setLoading(true);
+    if (limitReached) {
+      setCreateError("O limite de 8 categorias já foi atingido.");
+      return;
+    }
+
+    setCreating(true);
 
     try {
       const response = await fetch("/api/admin/categories", {
@@ -78,41 +121,264 @@ export default function CategoriesManager({
         headers: {
           "Content-Type": "application/json",
         },
+        body: JSON.stringify({ name }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Não foi possível cadastrar.");
+      }
+
+      setCategories((current) =>
+        [...current, result.category].sort(
+          (a, b) => a.sort_order - b.sort_order,
+        ),
+      );
+
+      setNewName("");
+      router.refresh();
+    } catch (error) {
+      setCreateError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível conectar ao servidor.",
+      );
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  // Iniciar edição
+  function startEditing(category: Category) {
+    setEditingId(category.id);
+    setEditingName(category.name);
+    setGeneralError("");
+  }
+
+  // Salvar edição
+  async function handleUpdate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (!editingId) return;
+
+    const name = editingName.trim();
+
+    if (!name) {
+      setGeneralError("Informe o nome da categoria.");
+      return;
+    }
+
+    if (name.length > 40) {
+      setGeneralError("O nome pode ter no máximo 40 caracteres.");
+      return;
+    }
+
+    setUpdating(true);
+    setGeneralError("");
+
+    try {
+      const updated = await updateCategory(editingId, { name });
+
+      setCategories((current) =>
+        current.map((category) =>
+          category.id === editingId ? updated : category,
+        ),
+      );
+
+      setEditingId(null);
+      setEditingName("");
+      router.refresh();
+    } catch (error) {
+      setGeneralError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível atualizar a categoria.",
+      );
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  // Ativar ou desativar
+  async function handleToggleStatus(category: Category) {
+    setChangingStatusId(category.id);
+    setGeneralError("");
+
+    try {
+      const updated = await updateCategory(category.id, {
+        active: !category.active,
+      });
+
+      setCategories((current) =>
+        current.map((item) => (item.id === category.id ? updated : item)),
+      );
+
+      router.refresh();
+    } catch (error) {
+      setGeneralError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível alterar o status.",
+      );
+    } finally {
+      setChangingStatusId(null);
+    }
+  }
+
+  // Excluir categoria
+  async function handleDelete(category: Category) {
+    const confirmed = window.confirm(
+      `Deseja realmente excluir a categoria "${category.name}"?`,
+    );
+
+    if (!confirmed) return;
+
+    setDeletingId(category.id);
+    setGeneralError("");
+
+    try {
+      const response = await fetch("/api/admin/categories", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: category.id }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Não foi possível excluir.");
+      }
+
+      setCategories((current) =>
+        current
+          .filter((item) => item.id !== category.id)
+          .map((item, index) => ({
+            ...item,
+            sort_order: index,
+          })),
+      );
+
+      router.refresh();
+    } catch (error) {
+      setGeneralError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível excluir a categoria.",
+      );
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  // Entrar no modo de organização
+  function startOrdering() {
+    setOriginalOrder([...categories]);
+    setOrderingMode(true);
+    setOrderError("");
+    setGeneralError("");
+    setEditingId(null);
+  }
+
+  // Cancelar organização
+  function cancelOrdering() {
+    setCategories(originalOrder);
+    setOrderingMode(false);
+    setDraggedId(null);
+    setOrderError("");
+  }
+
+  // Reorganizar posições localmente
+  function moveCategory(fromIndex: number, toIndex: number) {
+    if (toIndex < 0 || toIndex >= categories.length || fromIndex === toIndex) {
+      return;
+    }
+
+    setCategories((current) => {
+      const updated = [...current];
+      const [moved] = updated.splice(fromIndex, 1);
+      updated.splice(toIndex, 0, moved);
+
+      return updated.map((category, index) => ({
+        ...category,
+        sort_order: index,
+      }));
+    });
+  }
+
+  // Arrastar e soltar
+  function handleDrop(targetId: string) {
+    if (!draggedId || draggedId === targetId) return;
+
+    const fromIndex = categories.findIndex(
+      (category) => category.id === draggedId,
+    );
+
+    const toIndex = categories.findIndex(
+      (category) => category.id === targetId,
+    );
+
+    moveCategory(fromIndex, toIndex);
+    setDraggedId(null);
+  }
+
+  // Salvar nova ordem no banco
+  async function saveOrder() {
+    setSavingOrder(true);
+    setOrderError("");
+
+    try {
+      const response = await fetch("/api/admin/categories", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
-          name: trimmedName,
-          sort_order: order,
+          action: "reorder",
+          category_ids: categories.map((category) => category.id),
         }),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        setError(result.error || "Não foi possível cadastrar a categoria.");
-        return;
+        throw new Error(result.error || "Não foi possível salvar a ordem.");
       }
 
       setCategories((current) =>
-        [...current, result.category].sort(
-          (a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name),
-        ),
+        current.map((category, index) => ({
+          ...category,
+          sort_order: index,
+        })),
       );
 
-      setModalOpen(false);
-      setName("");
-      setSortOrder("0");
+      setOrderingMode(false);
+      setOriginalOrder([]);
+      setDraggedId(null);
 
       router.refresh();
-    } catch {
-      setError("Não foi possível conectar ao servidor.");
+    } catch (error) {
+      setOrderError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível salvar a nova ordem.",
+      );
     } finally {
-      setLoading(false);
+      setSavingOrder(false);
     }
   }
 
+  const orderChanged = categories.some(
+    (category, index) => category.id !== originalOrder[index]?.id,
+  );
+
   return (
-    <>
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="mx-auto max-w-7xl">
+      {/* Cabeçalho */}
+      <div className="mb-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-(--foreground)">
               Categorias
@@ -123,210 +389,355 @@ export default function CategoriesManager({
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={openModal}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) px-5 py-3 text-sm font-semibold text-black transition hover:opacity-90"
-          >
-            <Plus size={18} />
-            Nova categoria
-          </button>
+          <span className="w-fit rounded-full border border-(--border) px-4 py-2 text-sm font-medium text-(--muted)">
+            {categories.length} de 8 categorias
+          </span>
         </div>
+      </div>
 
-        <div className="overflow-hidden rounded-xl border border-(--border) bg-(--surface)">
-          <div className="border-b border-(--border) px-5 py-4">
+      {/* Cadastro */}
+      {!orderingMode && (
+        <div className="mb-8 rounded-xl border border-(--border) bg-(--surface) p-5">
+          <h2 className="mb-4 font-semibold">Adicionar categoria</h2>
+
+          <form
+            onSubmit={handleCreate}
+            className="flex flex-col gap-3 sm:flex-row"
+          >
+            <input
+              type="text"
+              value={newName}
+              onChange={(event) => {
+                setNewName(event.target.value);
+                setCreateError("");
+              }}
+              placeholder="Digite o nome da categoria"
+              maxLength={40}
+              disabled={limitReached || creating}
+              className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) px-4 py-3 text-sm text-(--foreground) outline-none transition focus:border-(--primary) disabled:opacity-50"
+            />
+
+            <button
+              type="submit"
+              disabled={limitReached || creating || !newName.trim()}
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) px-6 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <Plus size={18} />
+              {creating ? "Adicionando..." : "Adicionar"}
+            </button>
+          </form>
+
+          {createError && (
+            <p role="alert" className="mt-3 text-sm text-red-500">
+              {createError}
+            </p>
+          )}
+
+          {limitReached && (
+            <p className="mt-3 text-sm text-(--muted)">
+              Você atingiu o limite de 8 categorias. Exclua uma categoria para
+              adicionar outra.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Listagem */}
+      <div className="overflow-hidden rounded-xl border border-(--border) bg-(--surface)">
+        <div className="flex flex-col gap-3 border-b border-(--border) px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
             <h2 className="font-semibold">
               Categorias cadastradas
               <span className="ml-2 text-sm font-normal text-(--muted)">
                 ({categories.length})
               </span>
             </h2>
+
+            {orderingMode && (
+              <p className="mt-1 text-xs text-(--muted)">
+                Arraste as categorias para alterar a ordem.
+              </p>
+            )}
           </div>
 
-          {categories.length === 0 ? (
-            <div className="px-5 py-16 text-center">
-              <p className="font-medium text-(--foreground)">
-                Nenhuma categoria cadastrada
-              </p>
-
-              <p className="mt-2 text-sm text-(--muted)">
-                Comece criando a primeira categoria do catálogo.
-              </p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-(--border) text-(--muted)">
-                  <tr>
-                    <th className="px-5 py-4 font-medium">Nome</th>
-                    <th className="px-5 py-4 font-medium">Identificador</th>
-                    <th className="px-5 py-4 font-medium">Ordem</th>
-                    <th className="px-5 py-4 font-medium">Status</th>
-                  </tr>
-                </thead>
-
-                <tbody className="divide-y divide-(--border)">
-                  {categories.map((category) => (
-                    <tr key={category.id}>
-                      <td className="px-5 py-4 font-medium">{category.name}</td>
-
-                      <td className="px-5 py-4 text-(--muted)">
-                        {category.slug}
-                      </td>
-
-                      <td className="px-5 py-4">{category.sort_order}</td>
-
-                      <td className="px-5 py-4">
-                        <span
-                          className={`rounded-full px-3 py-1 text-xs font-medium ${
-                            category.active
-                              ? "bg-green-500/10 text-green-500"
-                              : "bg-gray-500/10 text-(--muted)"
-                          }`}
-                        >
-                          {category.active ? "Ativa" : "Inativa"}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {modalOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) closeModal();
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="category-modal-title"
-            className="w-full max-w-lg rounded-xl border border-(--border) bg-(--surface) p-6 shadow-2xl"
-          >
-            <div className="mb-6 flex items-center justify-between">
-              <h2
-                id="category-modal-title"
-                className="text-lg font-bold text-(--foreground)"
-              >
-                Nova categoria
-              </h2>
-
-              <button
-                type="button"
-                onClick={closeModal}
-                disabled={loading}
-                aria-label="Fechar"
-                className="rounded-lg p-2 text-(--muted) transition hover:bg-(--border) hover:text-(--foreground)"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div>
-                <label
-                  htmlFor="category-name"
-                  className="mb-2 block text-sm font-medium"
-                >
-                  Nome da categoria
-                </label>
-
-                <input
-                  id="category-name"
-                  type="text"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  placeholder="Ex.: Celulares"
-                  maxLength={80}
-                  required
-                  autoFocus
-                  className="w-full rounded-lg border border-(--border) bg-(--background) px-4 py-3 text-sm text-(--foreground) outline-none transition focus:border-(--primary)"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="category-slug"
-                  className="mb-2 block text-sm font-medium"
-                >
-                  Identificador (slug)
-                </label>
-
-                <input
-                  id="category-slug"
-                  type="text"
-                  value={slugPreview}
-                  readOnly
-                  placeholder="Será gerado automaticamente"
-                  className="w-full cursor-not-allowed rounded-lg border border-(--border) bg-(--background) px-4 py-3 text-sm text-(--muted) outline-none"
-                />
-
-                <p className="mt-2 text-xs text-(--muted)">
-                  Gerado automaticamente a partir do nome.
-                </p>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="category-order"
-                  className="mb-2 block text-sm font-medium"
-                >
-                  Ordem de exibição
-                </label>
-
-                <input
-                  id="category-order"
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={sortOrder}
-                  onChange={(event) => setSortOrder(event.target.value)}
-                  required
-                  className="w-full rounded-lg border border-(--border) bg-(--background) px-4 py-3 text-sm text-(--foreground) outline-none transition focus:border-(--primary)"
-                />
-
-                <p className="mt-2 text-xs text-(--muted)">
-                  Categorias com menor número aparecem primeiro.
-                </p>
-              </div>
-
-              {error && (
-                <p
-                  role="alert"
-                  className="rounded-lg bg-red-500/10 px-4 py-3 text-sm text-red-500"
-                >
-                  {error}
-                </p>
-              )}
-
-              <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+          {categories.length > 1 &&
+            (orderingMode ? (
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={closeModal}
-                  disabled={loading}
-                  className="rounded-lg border border-(--border) px-5 py-3 text-sm font-medium transition hover:bg-(--border) disabled:opacity-50"
+                  onClick={cancelOrdering}
+                  disabled={savingOrder}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-(--border) px-4 py-2.5 text-sm font-medium transition hover:bg-(--background) disabled:opacity-50"
                 >
+                  <X size={16} />
                   Cancelar
                 </button>
 
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="rounded-lg bg-(--primary) px-5 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  type="button"
+                  onClick={saveOrder}
+                  disabled={!orderChanged || savingOrder}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) px-4 py-2.5 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {loading ? "Salvando..." : "Salvar categoria"}
+                  <Save size={16} />
+                  {savingOrder ? "Salvando..." : "Salvar alterações"}
                 </button>
               </div>
-            </form>
-          </div>
+            ) : (
+              <button
+                type="button"
+                onClick={startOrdering}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-(--border) px-4 py-2.5 text-sm font-medium transition hover:bg-(--background)"
+              >
+                <ArrowUpDown size={16} />
+                Organizar categorias
+              </button>
+            ))}
         </div>
-      )}
-    </>
+
+        {generalError && (
+          <div
+            role="alert"
+            className="border-b border-(--border) bg-red-500/10 px-5 py-3 text-sm text-red-500"
+          >
+            {generalError}
+          </div>
+        )}
+
+        {orderError && (
+          <div
+            role="alert"
+            className="border-b border-(--border) bg-red-500/10 px-5 py-3 text-sm text-red-500"
+          >
+            {orderError}
+          </div>
+        )}
+
+        {categories.length === 0 ? (
+          <div className="px-5 py-16 text-center">
+            <p className="font-medium text-(--foreground)">
+              Nenhuma categoria cadastrada
+            </p>
+
+            <p className="mt-2 text-sm text-(--muted)">
+              Comece adicionando a primeira categoria do catálogo.
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-(--border)">
+            {categories.map((category, index) => (
+              <div
+                key={category.id}
+                draggable={orderingMode && !savingOrder}
+                onDragStart={(event) => {
+                  if (!orderingMode || savingOrder) return;
+
+                  setDraggedId(category.id);
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", category.id);
+                }}
+                onDragOver={(event) => {
+                  if (orderingMode) {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  handleDrop(category.id);
+                }}
+                onDragEnd={() => setDraggedId(null)}
+                className={`flex flex-col gap-3 px-5 py-4 transition sm:flex-row sm:items-center sm:justify-between ${
+                  orderingMode && draggedId === category.id ? "opacity-40" : ""
+                } ${
+                  orderingMode
+                    ? "bg-(--background)/40"
+                    : "hover:bg-(--background)/30"
+                }`}
+              >
+                {/* Nome e alça de arraste */}
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  {orderingMode && (
+                    <button
+                      type="button"
+                      aria-label={`Arrastar ${category.name}`}
+                      title="Arraste para reorganizar"
+                      className="cursor-grab touch-none text-(--muted) active:cursor-grabbing"
+                    >
+                      <GripVertical size={22} />
+                    </button>
+                  )}
+
+                  {orderingMode && (
+                    <span className="w-5 text-sm text-(--muted)">
+                      {index + 1}.
+                    </span>
+                  )}
+
+                  {editingId === category.id ? (
+                    <form
+                      onSubmit={handleUpdate}
+                      className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row"
+                    >
+                      <input
+                        type="text"
+                        value={editingName}
+                        onChange={(event) => setEditingName(event.target.value)}
+                        maxLength={80}
+                        autoFocus
+                        disabled={updating}
+                        className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm outline-none focus:border-(--primary)"
+                      />
+
+                      <div className="flex gap-2">
+                        <button
+                          type="submit"
+                          disabled={updating || !editingName.trim()}
+                          title="Salvar nome"
+                          aria-label="Salvar nome"
+                          className="rounded-lg bg-(--primary) p-2 text-black transition hover:opacity-90 disabled:opacity-50"
+                        >
+                          <Check size={18} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setEditingId(null)}
+                          disabled={updating}
+                          title="Cancelar edição"
+                          aria-label="Cancelar edição"
+                          className="rounded-lg border border-(--border) p-2 transition hover:bg-(--background)"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <span className="truncate font-medium text-(--foreground)">
+                      {category.name}
+                    </span>
+                  )}
+                </div>
+
+                {/* Status e ações */}
+                {!orderingMode && editingId !== category.id && (
+                  <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={category.active}
+                      aria-label={`Categoria ${category.name}: ${
+                        category.active ? "ativa" : "inativa"
+                      }`}
+                      disabled={
+                        changingStatusId === category.id ||
+                        deletingId === category.id ||
+                        editingId !== null
+                      }
+                      onClick={() => handleToggleStatus(category)}
+                      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                        category.active ? "bg-green-500" : "bg-gray-500"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block size-4 rounded-full bg-white transition-transform ${
+                          category.active ? "translate-x-6" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+
+                    <span
+                      className={`w-14 text-xs font-medium ${
+                        category.active ? "text-green-500" : "text-(--muted)"
+                      }`}
+                    >
+                      {changingStatusId === category.id
+                        ? "Salvando..."
+                        : category.active
+                          ? "Ativa"
+                          : "Inativa"}
+                    </span>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => startEditing(category)}
+                        disabled={
+                          deletingId === category.id ||
+                          changingStatusId !== null ||
+                          editingId !== null
+                        }
+                        title="Editar categoria"
+                        aria-label={`Editar ${category.name}`}
+                        className="rounded-lg p-2 text-(--muted) transition hover:bg-(--background) hover:text-(--foreground) disabled:opacity-40"
+                      >
+                        <Pencil size={17} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(category)}
+                        disabled={
+                          deletingId === category.id ||
+                          changingStatusId !== null ||
+                          editingId !== null
+                        }
+                        title="Excluir categoria"
+                        aria-label={`Excluir ${category.name}`}
+                        className="rounded-lg p-2 text-(--muted) transition hover:bg-red-500/10 hover:text-red-500 disabled:opacity-40"
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
+
+                    {deletingId === category.id && (
+                      <span className="text-xs text-(--muted)">
+                        Excluindo...
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Controles alternativos de ordenação */}
+                {orderingMode && (
+                  <div className="flex items-center justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={() => moveCategory(index, index - 1)}
+                      disabled={index === 0 || savingOrder}
+                      aria-label={`Mover ${category.name} para cima`}
+                      title="Mover para cima"
+                      className="rounded-lg border border-(--border) p-2 text-(--muted) transition hover:bg-(--surface) disabled:cursor-not-allowed disabled:opacity-30"
+                    >
+                      <ArrowUp size={17} />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => moveCategory(index, index + 1)}
+                      disabled={index === categories.length - 1 || savingOrder}
+                      aria-label={`Mover ${category.name} para baixo`}
+                      title="Mover para baixo"
+                      className="rounded-lg border border-(--border) p-2 text-(--muted) transition hover:bg-(--surface) disabled:cursor-not-allowed disabled:opacity-30"
+                    >
+                      <ArrowDown size={17} />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {orderingMode && (
+          <div className="border-t border-(--border) px-5 py-3">
+            <p className="text-xs text-(--muted)">
+              A nova ordem ainda não foi salva. Arraste as categorias ou utilize
+              as setas. Clique em Salvar alterações para confirmar.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
