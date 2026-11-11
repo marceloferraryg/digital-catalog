@@ -27,3 +27,21 @@ export async function getCategories(): Promise<Category[]> {
 
   return data ?? [];
 }
+
+export async function getActiveCategories(): Promise<Category[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, name, slug, active, sort_order, created_at")
+    .eq("active", true)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("Erro ao buscar categorias ativas:", error.message);
+    throw new Error("Não foi possível carregar as categorias.");
+  }
+
+  return data ?? [];
+}

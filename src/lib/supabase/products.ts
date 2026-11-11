@@ -47,41 +47,34 @@ export type AdminProduct = {
 
 function normalizeSpecifications(
   value: unknown,
-): { label: string; value: string }[] | undefined {
+): { label: string; value: string }[] {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  // Compatibilidade com registros antigos que possam estar em formato de array.
   if (Array.isArray(value)) {
-    const specifications = value
+    return value
       .filter(
-        (item) =>
-          item !== null &&
-          typeof item === "object" &&
-          typeof item.label === "string" &&
-          typeof item.value === "string",
+        (item): item is { label: string; value: string } =>
+          typeof item?.label === "string" && typeof item?.value === "string",
       )
       .map((item) => ({
         label: item.label,
         value: item.value,
       }));
-
-    return specifications.length > 0 ? specifications : undefined;
   }
 
-  if (value !== null && typeof value === "object") {
-    const specifications = Object.entries(value).map(
-      ([label, specificationValue]) => ({
-        label,
-        value:
-          typeof specificationValue === "string" ||
-          typeof specificationValue === "number" ||
-          typeof specificationValue === "boolean"
-            ? String(specificationValue)
-            : JSON.stringify(specificationValue),
-      }),
-    );
-
-    return specifications.length > 0 ? specifications : undefined;
-  }
-
-  return undefined;
+  // Formato atual do Supabase: { "Cor": "Preto" }
+  return Object.entries(value)
+    .filter(
+      ([label, itemValue]) =>
+        label.trim() !== "" && typeof itemValue === "string",
+    )
+    .map(([label, itemValue]) => ({
+      label,
+      value: itemValue,
+    }));
 }
 
 export async function getProducts(): Promise<Product[]> {
@@ -192,7 +185,9 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
   }
 
   const updaterMap = new Map<string, string>(
-    (updaters ?? []).map((user) => [user.id, user.name]),
+    (updaters ?? []).map(
+      (user: { id: string; name: string }) => [user.id, user.name] as const,
+    ),
   );
 
   return (products ?? []).map((row) => {
@@ -203,6 +198,12 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
 
       return a.sort_order - b.sort_order;
     });
+
+    const category = Array.isArray(row.category)
+      ? row.category[0]
+      : row.category;
+
+    const brand = Array.isArray(row.brand) ? row.brand[0] : row.brand;
 
     const formattedImages = images.map((image) => {
       const { data } = supabase.storage
@@ -227,8 +228,8 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
       specifications: normalizeSpecifications(row.specifications),
       category_id: row.category_id,
       brand_id: row.brand_id,
-      category_name: row.category?.name ?? "",
-      brand_name: row.brand?.name ?? null,
+      category_name: category?.name ?? "",
+      brand_name: brand?.name ?? null,
       images: formattedImages,
       created_at: row.created_at,
       updated_at: row.updated_at,

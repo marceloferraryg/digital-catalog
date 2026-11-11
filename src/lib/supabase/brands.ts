@@ -24,3 +24,20 @@ export async function getBrands(): Promise<Brand[]> {
 
   return data ?? [];
 }
+
+export async function getActiveBrands(): Promise<Brand[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("brands")
+    .select("id, name, slug, active, created_at")
+    .eq("active", true)
+    .order("name", { ascending: true });
+
+  if (error) {
+    console.error("Erro ao buscar marcas ativas:", error.message);
+    throw new Error("Não foi possível carregar as marcas.");
+  }
+
+  return data ?? [];
+}

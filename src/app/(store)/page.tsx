@@ -1,6 +1,6 @@
 import HeroHome from "../../components/home/Hero";
 import Categories from "@/components/home/Categories";
-import AssistenceHome from "@/components/home/assistence";
+import AssistenceHome from "@/components/home/Assistence";
 
 export default function Home() {
   return (
