@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+console.log(
+  "[ProductsManager] Renderizou no cliente:",
+  typeof window !== "undefined",
+);
+
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -97,7 +103,16 @@ function formatDate(date: string) {
 export default function ProductsManager({
   initialProducts,
 }: ProductsManagerProps) {
-  const [products] = useState<AdminProduct[]>(initialProducts);
+  const [products, setProducts] = useState<AdminProduct[]>(initialProducts);
+
+  console.log(
+    "[ProductsManager] initialProducts:",
+    initialProducts.map((p) => p.name),
+  );
+  console.log(
+    "[ProductsManager] products state:",
+    products.map((p) => p.name),
+  );
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -173,6 +188,10 @@ export default function ProductsManager({
     setBrandFilter("all");
     setAvailabilityFilter("all");
   }
+
+  useEffect(() => {
+    console.log("[ProductsManager] Executado no navegador!");
+  }, []);
 
   return (
     <div className="mx-auto mb-8 max-w-7xl space-y-6">

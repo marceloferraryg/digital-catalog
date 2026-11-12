@@ -174,6 +174,12 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
     supabase.rpc("get_product_updaters"),
   ]);
 
+  console.log(
+    "[getAdminProducts] Produtos retornados:",
+    products?.length,
+    products?.map((product) => product.name),
+  );
+
   if (productsError) {
     console.error("Erro ao buscar produtos:", productsError.message);
     throw new Error("Não foi possível carregar os produtos.");

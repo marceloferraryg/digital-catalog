@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { connection } from "next/server";
-
+import { revalidatePath } from "next/cache";
 import { getAdminUser } from "@/lib/supabase/auth";
 import { getAdminProducts } from "@/lib/supabase/products";
 import { createClient } from "@/lib/supabase/server";
@@ -204,6 +204,9 @@ export async function POST(request: Request) {
         { status: error.code === "23505" ? 409 : 500 },
       );
     }
+
+    revalidatePath("/admin/products");
+    revalidatePath("/products");
 
     return NextResponse.json({ product }, { status: 201 });
   } catch (error) {
