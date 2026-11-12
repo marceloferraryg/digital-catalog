@@ -1,8 +1,8 @@
 "use client";
 
-import { SetStateAction, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Rows3, Grid2x2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, LayoutGrid, List } from "lucide-react";
 
 import ProductCard, { type Product } from "@/components/products/ProductCard";
 import ProductFilters, {
@@ -14,7 +14,7 @@ type ProductsCatalogProps = {
   initialCategory?: string;
 };
 
-type ProductsViewFormat = "grid" | "row";
+type ProductsViewFormat = "grid" | "list";
 
 const PRODUCTS_PER_PAGE = 20;
 
@@ -282,39 +282,32 @@ export default function ProductsCatalog({
                 : "0 produtos encontrados"}
             </p>
           </>
-          <div className="flex mr-4 justify-center items-center gap-4">
-            <p className="text-md text-(--muted)">Exibir:</p>
 
+          <div className="flex items-center gap-3 rounded-lg border border-(--border) bg-(--surface) p-1">
             <button
               type="button"
-              aria-label="Exibir produtos em grade"
-              aria-pressed={viewProductsFormat === "grid"}
-              onClick={() => ChangeViewProducts("grid")}
+              onClick={() => ChangeViewProducts("list")}
+              aria-label="Visualização em lista"
+              className={`flex h-9 w-9 items-center justify-center rounded-md transition ${
+                viewProductsFormat === "list"
+                  ? "bg-(--primary) text-black"
+                  : "text-(--muted) hover:bg-(--background)"
+              }`}
             >
-              <Grid2x2
-                size={28}
-                className={
-                  viewProductsFormat === "grid"
-                    ? "text-(--primary)"
-                    : "text-white"
-                }
-              />
+              <List size={18} />
             </button>
 
             <button
               type="button"
-              aria-label="Exibir produtos em lista"
-              aria-pressed={viewProductsFormat === "row"}
-              onClick={() => ChangeViewProducts("row")}
+              onClick={() => ChangeViewProducts("grid")}
+              aria-label="Visualização em grade"
+              className={`flex h-9 w-9 items-center justify-center rounded-md transition ${
+                viewProductsFormat === "grid"
+                  ? "bg-(--primary) text-black"
+                  : "text-(--muted) hover:bg-(--background)"
+              }`}
             >
-              <Rows3
-                size={28}
-                className={
-                  viewProductsFormat === "row"
-                    ? "text-(--primary)"
-                    : "text-white"
-                }
-              />
+              <LayoutGrid size={18} />
             </button>
           </div>
         </div>

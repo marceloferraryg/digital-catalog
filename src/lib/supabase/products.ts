@@ -14,6 +14,7 @@ type ProductRow = {
   category: { name: string; slug: string } | null;
   brand: { name: string } | null;
   product_images: {
+    id: string;
     storage_path: string;
     alt_text: string | null;
     sort_order: number;
@@ -28,12 +29,16 @@ export type AdminProduct = {
   price: number | null;
   available: boolean;
   description: string | null;
-  specifications: unknown;
+  specifications: {
+    label: string;
+    value: string;
+  }[];
   category_id: string;
   brand_id: string | null;
   category_name: string;
   brand_name: string | null;
   images: {
+    id: string;
     url: string;
     alt_text: string | null;
     sort_order: number;
@@ -52,7 +57,6 @@ function normalizeSpecifications(
     return [];
   }
 
-  // Compatibilidade com registros antigos que possam estar em formato de array.
   if (Array.isArray(value)) {
     return value
       .filter(
@@ -65,7 +69,6 @@ function normalizeSpecifications(
       }));
   }
 
-  // Formato atual do Supabase: { "Cor": "Preto" }
   return Object.entries(value)
     .filter(
       ([label, itemValue]) =>
@@ -162,6 +165,7 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
         category:categories(name),
         brand:brands(name),
         product_images(
+          id,
           storage_path,
           alt_text,
           sort_order,
@@ -173,12 +177,6 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
 
     supabase.rpc("get_product_updaters"),
   ]);
-
-  console.log(
-    "[getAdminProducts] Produtos retornados:",
-    products?.length,
-    products?.map((product) => product.name),
-  );
 
   if (productsError) {
     console.error("Erro ao buscar produtos:", productsError.message);
@@ -217,6 +215,7 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
         .getPublicUrl(image.storage_path);
 
       return {
+        id: image.id,
         url: data.publicUrl,
         alt_text: image.alt_text,
         sort_order: image.sort_order,
@@ -245,4 +244,109 @@ export async function getAdminProducts(): Promise<AdminProduct[]> {
         : null,
     };
   });
+}
+
+export async function getAdminProductById(
+  productId: string,
+): Promise<AdminProduct | null> {
+  const supabase = await createClient();
+
+  const { data: product, error } = await supabase
+    .from("products")
+    .select(
+      `
+      id,
+      name,
+      slug,
+      price,
+      available,
+      description,
+      specifications,
+      category_id,
+      brand_id,
+      created_at,
+      updated_at,
+      updated_by,
+      category:categories(name),
+      brand:brands(name),
+      product_images(
+        id,
+        storage_path,
+        alt_text,
+        sort_order,
+        is_primary
+      )
+    `,
+    )
+    .eq("id", productId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("Erro ao buscar produto:", error.message);
+    throw new Error("Não foi possível carregar o produto.");
+  }
+
+  if (!product) {
+    return null;
+  }
+
+  const category = Array.isArray(product.category)
+    ? product.category[0]
+    : product.category;
+
+  const brand = Array.isArray(product.brand) ? product.brand[0] : product.brand;
+
+  const { data: updaters, error: updatersError } = await supabase.rpc(
+    "get_product_updaters",
+  );
+
+  if (updatersError) {
+    console.error("Erro ao buscar responsáveis:", updatersError.message);
+    throw new Error("Não foi possível carregar os responsáveis.");
+  }
+
+  const updater = (updaters ?? []).find(
+    (user: { id: string; name: string }) => user.id === product.updated_by,
+  );
+
+  const images = [...(product.product_images ?? [])]
+    .sort((a, b) => {
+      if (a.is_primary !== b.is_primary) {
+        return a.is_primary ? -1 : 1;
+      }
+
+      return a.sort_order - b.sort_order;
+    })
+    .map((image) => {
+      const { data } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(image.storage_path);
+
+      return {
+        id: image.id,
+        url: data.publicUrl,
+        alt_text: image.alt_text,
+        sort_order: image.sort_order,
+        is_primary: image.is_primary,
+      };
+    });
+
+  return {
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    price: product.price === null ? null : Number(product.price),
+    available: product.available,
+    description: product.description,
+    specifications: normalizeSpecifications(product.specifications),
+    category_id: product.category_id,
+    brand_id: product.brand_id,
+    category_name: category?.name ?? "",
+    brand_name: brand?.name ?? null,
+    images,
+    created_at: product.created_at,
+    updated_at: product.updated_at,
+    updated_by: product.updated_by,
+    updated_by_name: updater?.name ?? null,
+  };
 }

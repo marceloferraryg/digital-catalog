@@ -13,6 +13,14 @@ import Image from "next/image";
 
 import { ArrowLeft, Plus, Trash2, X } from "lucide-react";
 
+export type ExistingProductImage = {
+  id: string;
+  url: string;
+  alt_text: string | null;
+  sort_order: number;
+  is_primary: boolean;
+};
+
 export type ProductFormData = {
   name: string;
   slug: string;
@@ -26,6 +34,7 @@ export type ProductFormData = {
     value: string;
   }[];
   images: File[];
+  removedImageIds: string[];
 };
 
 type SelectOption = {
@@ -39,6 +48,7 @@ type ProductFormProps = {
   initialData?: Partial<ProductFormData>;
   onSubmit: (data: ProductFormData) => void;
   isSubmitting?: boolean;
+  existingImages?: ExistingProductImage[];
 };
 
 type ProductImage = {
@@ -72,10 +82,13 @@ export default function ProductForm({
   initialData,
   onSubmit,
   isSubmitting = false,
+  existingImages: initialImages = [],
 }: ProductFormProps) {
   const [name, setName] = useState(initialData?.name ?? "");
   const [slug, setSlug] = useState(initialData?.slug ?? "");
-  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(
+    Boolean(initialData?.slug),
+  );
 
   const [categoryId, setCategoryId] = useState(initialData?.category_id ?? "");
 
@@ -93,8 +106,16 @@ export default function ProductForm({
     { label: string; value: string }[]
   >(initialData?.specifications ?? []);
 
-  // Imagens selecionadas
+  // Imagens que já existem no produto.
+  const [existingImages, setExistingImages] =
+    useState<ExistingProductImage[]>(initialImages);
+
+  // IDs das imagens existentes que o usuário decidiu remover.
+  const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
+
+  // Imagens novas selecionadas pelo usuário.
   const [images, setImages] = useState<ProductImage[]>([]);
+
   const [imageError, setImageError] = useState("");
 
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -144,13 +165,22 @@ export default function ProductForm({
     setSpecifications((current) => current.filter((_, i) => i !== index));
   }
 
-  // Seleção e validação das imagens
+  // Seleção e validação das imagens.
   function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
     const selectedFiles = Array.from(event.target.files ?? []);
 
     setImageError("");
 
-    const remainingSlots = MAX_IMAGES - images.length;
+    const remainingSlots = MAX_IMAGES - existingImages.length - images.length;
+
+    if (remainingSlots <= 0) {
+      setImageError(
+        `Você pode adicionar no máximo ${MAX_IMAGES} imagens por produto.`,
+      );
+
+      event.target.value = "";
+      return;
+    }
 
     const newImages: ProductImage[] = [];
     const errors: string[] = [];
@@ -197,7 +227,7 @@ export default function ProductForm({
     event.target.value = "";
   }
 
-  // Remove uma imagem e libera sua URL temporária.
+  // Remove uma imagem nova e libera sua URL temporária.
   function removeImage(index: number) {
     setImages((current) => {
       const imageToRemove = current[index];
@@ -209,6 +239,20 @@ export default function ProductForm({
 
       return current.filter((_, i) => i !== index);
     });
+
+    setImageError("");
+  }
+
+  // Remove uma imagem existente da tela e registra seu ID.
+  // A exclusão real será feita posteriormente pela API.
+  function removeExistingImage(imageId: string) {
+    setExistingImages((current) =>
+      current.filter((image) => image.id !== imageId),
+    );
+
+    setRemovedImageIds((current) =>
+      current.includes(imageId) ? current : [...current, imageId],
+    );
 
     setImageError("");
   }
@@ -228,6 +272,7 @@ export default function ProductForm({
         (item) => item.label.trim() && item.value.trim(),
       ),
       images: images.map((image) => image.file),
+      removedImageIds,
     });
   }
 
@@ -235,6 +280,10 @@ export default function ProductForm({
     "h-11 w-full rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none transition focus:border-(--primary)";
 
   const labelClass = "mb-1.5 block text-sm font-medium text-(--foreground)";
+
+  const totalImages = existingImages.length + images.length;
+
+  const hasPrimaryImage = existingImages.some((image) => image.is_primary);
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto mb-8 max-w-7xl space-y-6">
@@ -527,7 +576,7 @@ export default function ProductForm({
           </div>
 
           <span className="shrink-0 rounded-lg bg-(--background) px-3 py-1.5 text-sm font-medium text-(--foreground)">
-            {images.length} de {MAX_IMAGES}
+            {totalImages} de {MAX_IMAGES}
           </span>
         </div>
 
@@ -541,21 +590,21 @@ export default function ProductForm({
         />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-          {images.map((image, index) => (
-            <div key={image.preview} className="group relative">
+          {/* Imagens que já existem no produto */}
+          {existingImages.map((image, index) => (
+            <div key={image.id} className="group relative">
               <div className="relative aspect-square overflow-hidden rounded-lg border border-(--border) bg-(--background)">
                 <Image
-                  src={image.preview}
-                  alt={`Foto ${index + 1} do produto`}
+                  src={image.url}
+                  alt={image.alt_text ?? `Foto ${index + 1} do produto`}
                   fill
-                  unoptimized
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
                   className="object-cover"
                 />
 
                 <button
                   type="button"
-                  onClick={() => removeImage(index)}
+                  onClick={() => removeExistingImage(image.id)}
                   aria-label={`Remover foto ${index + 1}`}
                   className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-500"
                 >
@@ -568,7 +617,7 @@ export default function ProductForm({
                   Foto {index + 1}
                 </span>
 
-                {index === 0 && (
+                {(image.is_primary || (index === 0 && !hasPrimaryImage)) && (
                   <span className="rounded bg-(--primary) px-1.5 py-0.5 text-[10px] font-bold text-black">
                     CAPA
                   </span>
@@ -577,7 +626,49 @@ export default function ProductForm({
             </div>
           ))}
 
-          {images.length < MAX_IMAGES && (
+          {/* Imagens novas selecionadas */}
+          {images.map((image, index) => {
+            const imageNumber = existingImages.length + index + 1;
+
+            return (
+              <div key={image.preview} className="group relative">
+                <div className="relative aspect-square overflow-hidden rounded-lg border border-(--border) bg-(--background)">
+                  <Image
+                    src={image.preview}
+                    alt={`Foto ${imageNumber} do produto`}
+                    fill
+                    unoptimized
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                    className="object-cover"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => removeImage(index)}
+                    aria-label={`Remover foto ${imageNumber}`}
+                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-500"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="mt-2 flex items-center justify-between gap-1">
+                  <span className="text-xs font-medium text-(--foreground)">
+                    Foto {imageNumber}
+                  </span>
+
+                  {existingImages.length === 0 && index === 0 && (
+                    <span className="rounded bg-(--primary) px-1.5 py-0.5 text-[10px] font-bold text-black">
+                      CAPA
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Botão para adicionar imagens */}
+          {totalImages < MAX_IMAGES && (
             <button
               type="button"
               onClick={() => imageInputRef.current?.click()}

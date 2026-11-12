@@ -1,14 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-
-console.log(
-  "[ProductsManager] Renderizou no cliente:",
-  typeof window !== "undefined",
-);
+import { useMemo, useState } from "react";
 
 import Image from "next/image";
 import Link from "next/link";
+
 import {
   Plus,
   Search,
@@ -18,6 +14,8 @@ import {
   Package,
   ImageOff,
   X,
+  Trash2,
+  LoaderCircle,
 } from "lucide-react";
 
 import type { AdminProduct } from "@/lib/supabase/products";
@@ -105,15 +103,6 @@ export default function ProductsManager({
 }: ProductsManagerProps) {
   const [products, setProducts] = useState<AdminProduct[]>(initialProducts);
 
-  console.log(
-    "[ProductsManager] initialProducts:",
-    initialProducts.map((p) => p.name),
-  );
-  console.log(
-    "[ProductsManager] products state:",
-    products.map((p) => p.name),
-  );
-
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [brandFilter, setBrandFilter] = useState("all");
@@ -121,7 +110,11 @@ export default function ProductsManager({
   const [availabilityFilter, setAvailabilityFilter] =
     useState<AvailabilityFilter>("all");
 
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
+
+  const [deletingProductId, setDeletingProductId] = useState<string | null>(
+    null,
+  );
 
   const categories = useMemo(
     () =>
@@ -189,9 +182,41 @@ export default function ProductsManager({
     setAvailabilityFilter("all");
   }
 
-  useEffect(() => {
-    console.log("[ProductsManager] Executado no navegador!");
-  }, []);
+  async function handleDeleteProduct(product: AdminProduct) {
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir o produto "${product.name}"?\n\nEssa ação também excluirá as imagens cadastradas e não poderá ser desfeita.`,
+    );
+
+    if (!confirmed) return;
+
+    setDeletingProductId(product.id);
+
+    try {
+      const response = await fetch(`/api/admin/products/${product.id}`, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Não foi possível excluir o produto.");
+      }
+
+      setProducts((currentProducts) =>
+        currentProducts.filter((item) => item.id !== product.id),
+      );
+    } catch (error) {
+      console.error("Erro ao excluir produto:", error);
+
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Ocorreu um erro ao excluir o produto.",
+      );
+    } finally {
+      setDeletingProductId(null);
+    }
+  }
 
   return (
     <div className="mx-auto mb-8 max-w-7xl space-y-6">
@@ -202,17 +227,18 @@ export default function ProductsManager({
             Produtos
           </h1>
 
-          <p className="mt-1 text-sm text-(--muted)">
+          <p className="text-sm text-(--muted)">
             Gerencie os produtos disponíveis no catálogo da loja.
           </p>
         </div>
 
         <Link
           href="/admin/products/new"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-(--primary) px-4 text-sm font-semibold text-black transition-opacity hover:opacity-90"
+          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-(--primary) px-4 
+                       transition-opacity hover:opacity-90"
         >
-          <Plus size={18} />
-          Novo produto
+          <Plus size={22} color="black" />
+          <span className="text-sm font-semibold text-black">Novo produto</span>
         </Link>
       </div>
 
@@ -256,7 +282,8 @@ export default function ProductsManager({
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Buscar por nome, marca ou categoria..."
-            className="h-11 w-full rounded-lg border border-(--border) bg-(--background) pl-10 pr-4 text-sm text-(--foreground) outline-none transition focus:border-(--primary)"
+            className="h-11 w-full rounded-lg border border-(--border) bg-(--background) pl-10 pr-4 
+                        text-sm text-(--foreground) outline-none transition focus:border-(--primary)"
           />
         </div>
 
@@ -264,7 +291,8 @@ export default function ProductsManager({
           <select
             value={categoryFilter}
             onChange={(event) => setCategoryFilter(event.target.value)}
-            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm 
+                        text-(--foreground) outline-none focus:border-(--primary)"
           >
             <option value="all">Todas as categorias</option>
 
@@ -278,7 +306,8 @@ export default function ProductsManager({
           <select
             value={brandFilter}
             onChange={(event) => setBrandFilter(event.target.value)}
-            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm 
+                        text-(--foreground) outline-none focus:border-(--primary)"
           >
             <option value="all">Todas as marcas</option>
 
@@ -294,7 +323,8 @@ export default function ProductsManager({
             onChange={(event) =>
               setAvailabilityFilter(event.target.value as AvailabilityFilter)
             }
-            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 
+                        text-sm text-(--foreground) outline-none focus:border-(--primary)"
           >
             <option value="all">Todas as disponibilidades</option>
             <option value="available">Disponíveis</option>
@@ -312,21 +342,7 @@ export default function ProductsManager({
             : "produtos encontrados"}
         </p>
 
-        <div className="flex items-center gap-1 rounded-lg border border-(--border) bg-(--surface) p-1">
-          <button
-            type="button"
-            onClick={() => setViewMode("grid")}
-            aria-label="Visualização em grade"
-            aria-pressed={viewMode === "grid"}
-            className={`flex h-9 w-9 items-center justify-center rounded-md transition ${
-              viewMode === "grid"
-                ? "bg-(--primary) text-black"
-                : "text-(--muted) hover:bg-(--background)"
-            }`}
-          >
-            <LayoutGrid size={18} />
-          </button>
-
+        <div className="flex items-center gap-3 rounded-lg border border-(--border) bg-(--surface) p-1">
           <button
             type="button"
             onClick={() => setViewMode("list")}
@@ -340,13 +356,33 @@ export default function ProductsManager({
           >
             <List size={18} />
           </button>
+
+          <button
+            type="button"
+            onClick={() => setViewMode("grid")}
+            aria-label="Visualização em grade"
+            aria-pressed={viewMode === "grid"}
+            className={`flex h-9 w-9 items-center justify-center rounded-md transition ${
+              viewMode === "grid"
+                ? "bg-(--primary) text-black"
+                : "text-(--muted) hover:bg-(--background)"
+            }`}
+          >
+            <LayoutGrid size={18} />
+          </button>
         </div>
       </div>
 
       {/* Conteúdo */}
       {filteredProducts.length === 0 ? (
-        <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-(--border) bg-(--surface) px-4 py-10 text-center">
-          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-(--background) text-(--muted)">
+        <div
+          className="flex min-h-64 flex-col items-center justify-center rounded-xl   
+                        border border-(--border) bg-(--surface) px-4 py-10 text-center"
+        >
+          <div
+            className="mb-3 flex h-14 w-14 items-center justify-center rounded-full 
+                          bg-(--background) text-(--muted)"
+          >
             {products.length === 0 ? (
               <Package size={26} />
             ) : (
@@ -369,29 +405,36 @@ export default function ProductsManager({
           {products.length === 0 ? (
             <Link
               href="/admin/products/new"
-              className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-(--primary) px-4 text-sm font-semibold text-black hover:opacity-90"
+              className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-(--primary) px-4 
+                          text-sm font-semibold  hover:opacity-90"
             >
               <Plus size={17} />
-              Cadastrar produto
+              <span className="text-sm font-semibold text-black">
+                Cadastrar produto
+              </span>
             </Link>
           ) : hasFilters ? (
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-(--primary) hover:underline"
+              className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-(--primary) 
+                          hover:underline"
             >
               <X size={16} />
-              Limpar filtros
+              <span className="text-sm font-medium text-(--primary)">
+                Limpar filtros
+              </span>
             </button>
           ) : null}
         </div>
       ) : viewMode === "grid" ? (
         /* Visualização em grade */
-        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {filteredProducts.map((product) => (
             <article
               key={product.id}
-              className="overflow-hidden rounded-xl border border-(--border) bg-(--surface) transition-colors hover:border-(--primary)/50"
+              className="overflow-hidden rounded-xl border border-(--border) bg-(--surface) 
+                          transition-colors hover:border-(--primary)/50"
             >
               <div className="relative aspect-4/3">
                 <ProductImage product={product} className="h-full w-full" />
@@ -402,16 +445,21 @@ export default function ProductsManager({
               </div>
 
               <div className="space-y-3 p-4">
-                <div>
-                  <h3 className="line-clamp-2 min-h-10 font-semibold text-(--foreground)">
-                    {product.name}
-                  </h3>
-
-                  <p className="mt-1 text-xs text-(--muted)">
-                    {product.brand_name || "Sem marca"}
-                    {" · "}
-                    {product.category_name || "Sem categoria"}
-                  </p>
+                <div className=" flex flex-col space-x-0.5 ">
+                  <>
+                    <h3 className="line-clamp-2 min-h-10 font-semibold text-(--foreground) mb-2">
+                      {product.name}
+                    </h3>
+                  </>
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs text-(--muted)">
+                      {product.brand_name || "Sem marca"}{" "}
+                    </p>
+                    <p className="text-3xl text-(--muted)"> · </p>
+                    <p className="text-xs text-(--muted)">
+                      {product.category_name || "Sem categoria"}
+                    </p>
+                  </div>
                 </div>
 
                 <p className="text-lg font-semibold text-(--primary)">
@@ -430,13 +478,32 @@ export default function ProductsManager({
                   </p>
                 </div>
 
-                <Link
-                  href={`/admin/products/${product.id}`}
-                  className="flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-(--border) text-sm font-medium text-(--foreground) transition hover:border-(--primary) hover:text-(--primary)"
-                >
-                  <Pencil size={15} />
-                  Editar produto
-                </Link>
+                <div className="flex gap-2">
+                  <Link
+                    href={`/admin/products/${product.id}`}
+                    className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-(--border) text-sm font-medium text-(--foreground) transition hover:border-(--primary) hover:text-(--primary)"
+                  >
+                    <Pencil size={15} />
+                    Editar produto
+                  </Link>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteProduct(product)}
+                    disabled={deletingProductId === product.id}
+                    aria-label={`Excluir ${product.name}`}
+                    title="Excluir produto"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg 
+                                border border-red-500/30 text-red-500 transition 
+                                hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {deletingProductId === product.id ? (
+                      <LoaderCircle size={17} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={17} />
+                    )}
+                  </button>
+                </div>
               </div>
             </article>
           ))}
@@ -482,17 +549,18 @@ export default function ProductsManager({
                 {filteredProducts.map((product) => (
                   <tr
                     key={product.id}
-                    className="border-b border-(--border) last:border-0 transition hover:bg-(--background)"
+                    className="border-b border-(--border) last:border-0 transition 
+                                hover:bg-(--background)"
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <ProductImage
                           product={product}
-                          className="h-12 w-12 shrink-0 rounded-lg"
+                          className="h-16 w-16 shrink-0 rounded-md"
                         />
 
                         <div className="max-w-48">
-                          <p className="truncate text-sm font-medium text-(--foreground)">
+                          <p className="text-sm font-medium text-(--foreground) line-clamp-2 mb-1">
                             {product.name}
                           </p>
 
@@ -530,13 +598,31 @@ export default function ProductsManager({
                     </td>
 
                     <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/admin/products/${product.id}`}
-                        aria-label={`Editar ${product.name}`}
-                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-(--muted) transition hover:bg-(--background) hover:text-(--primary)"
-                      >
-                        <Pencil size={17} />
-                      </Link>
+                      <div className="flex items-center justify-end gap-1">
+                        <Link
+                          href={`/admin/products/${product.id}`}
+                          aria-label={`Editar ${product.name}`}
+                          title="Editar produto"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-(--muted) transition hover:bg-(--background) hover:text-(--primary)"
+                        >
+                          <Pencil size={17} />
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteProduct(product)}
+                          disabled={deletingProductId === product.id}
+                          aria-label={`Excluir ${product.name}`}
+                          title="Excluir produto"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {deletingProductId === product.id ? (
+                            <LoaderCircle size={17} className="animate-spin" />
+                          ) : (
+                            <Trash2 size={17} />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
