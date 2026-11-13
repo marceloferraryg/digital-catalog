@@ -40,12 +40,14 @@ export default function LogoutButton() {
         type="button"
         onClick={handleLogout}
         disabled={loading}
-        className="inline-flex items-center gap-2 rounded-lg border border-(--border) px-4 py-2 text-sm 
+        className="inline-flex items-center gap-2 rounded-lg border border-(--border) px-4 py-2 
                     font-medium text-(--foreground) transition 
                     hover:bg-(--surface) disabled:cursor-not-allowed disabled:opacity-50"
       >
-        <LogOut size={16} />
-        {loading ? "Saindo..." : "Sair"}
+        <LogOut size={18} color="red" />
+        <p className="text-sm font-medium text-(--foreground)">
+          {loading ? "Saindo..." : "Sair"}
+        </p>
       </button>
 
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}

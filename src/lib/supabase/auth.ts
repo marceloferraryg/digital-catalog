@@ -26,3 +26,27 @@ export async function getAdminUser() {
 
   return admin;
 }
+
+export async function getAdminPermissions(userId: string) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("admin_user_permissions")
+    .select(
+      `
+      admin_permissions (
+        code
+      )
+    `,
+    )
+    .eq("user_id", userId);
+
+  if (error) {
+    console.error("Erro ao buscar permissões do administrador:", error);
+    return null;
+  }
+
+  return data.flatMap((item) =>
+    item.admin_permissions.map((permission) => permission.code),
+  );
+}

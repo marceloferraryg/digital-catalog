@@ -12,10 +12,15 @@ type Admin = {
 
 type AdminShellProps = {
   admin: Admin;
+  permissions: string[] | null;
   children: React.ReactNode;
 };
 
-export default function AdminShell({ admin, children }: AdminShellProps) {
+export default function AdminShell({
+  admin,
+  permissions,
+  children,
+}: AdminShellProps) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   function closeMenu() {
@@ -24,7 +29,12 @@ export default function AdminShell({ admin, children }: AdminShellProps) {
 
   return (
     <div className="min-h-screen bg-(--background) text-(--foreground)">
-      <AdminSidebar admin={admin} open={menuOpen} onClose={closeMenu} />
+      <AdminSidebar
+        admin={admin}
+        permissions={permissions}
+        open={menuOpen}
+        onClose={closeMenu}
+      />
 
       <div className="min-h-screen md:pl-64">
         <AdminHeader admin={admin} onMenuClick={() => setMenuOpen(true)} />

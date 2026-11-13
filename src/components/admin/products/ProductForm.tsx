@@ -547,15 +547,16 @@ export default function ProductForm({
                   aria-label="Valor da especificação"
                   className={inputClass}
                 />
-
-                <button
-                  type="button"
-                  onClick={() => removeSpecification(index)}
-                  aria-label="Remover especificação"
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-(--muted) transition hover:bg-red-500/10 hover:text-red-500"
-                >
-                  <Trash2 size={17} />
-                </button>
+                <div className="flex items-center justify-end">
+                  <button
+                    type="button"
+                    onClick={() => removeSpecification(index)}
+                    aria-label="Remover especificação"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-(--muted) transition hover:bg-red-500/10 hover:text-red-500"
+                  >
+                    <Trash2 size={20} color="red" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -672,7 +673,7 @@ export default function ProductForm({
             <button
               type="button"
               onClick={() => imageInputRef.current?.click()}
-              className="flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-(--border) bg-(--background) text-(--muted) transition hover:border-(--primary) hover:text-(--primary)"
+              className="flex aspect-square flex-col items-center justify-center gap-2 mb-4 rounded-lg border border-dashed border-(--border) bg-(--background) text-(--muted) transition hover:border-(--primary) hover:text-(--primary)"
             >
               <Plus size={28} />
 

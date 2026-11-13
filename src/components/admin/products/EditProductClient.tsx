@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 import ProductForm, {
   type ProductFormData,
@@ -25,7 +24,6 @@ export default function EditProductClient({
   categories,
   brands,
 }: EditProductClientProps) {
-  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(data: ProductFormData) {
@@ -103,8 +101,7 @@ export default function EditProductClient({
       }
 
       // 4. Volta para a listagem.
-      router.push("/admin/products");
-      router.refresh();
+      window.location.assign("/admin/products");
     } catch (error) {
       console.error("Erro ao editar produto:", error);
 

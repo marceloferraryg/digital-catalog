@@ -429,7 +429,7 @@ export default function ProductsManager({
         </div>
       ) : viewMode === "grid" ? (
         /* Visualização em grade */
-        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 min-[480px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {filteredProducts.map((product) => (
             <article
               key={product.id}
@@ -439,7 +439,7 @@ export default function ProductsManager({
               <div className="relative aspect-4/3">
                 <ProductImage product={product} className="h-full w-full" />
 
-                <div className="absolute right-3 top-3">
+                <div className="absolute right-1 top-1">
                   <AvailabilityBadge available={product.available} />
                 </div>
               </div>
@@ -484,7 +484,7 @@ export default function ProductsManager({
                     className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-(--border) text-sm font-medium text-(--foreground) transition hover:border-(--primary) hover:text-(--primary)"
                   >
                     <Pencil size={15} />
-                    Editar produto
+                    Editar
                   </Link>
 
                   <button

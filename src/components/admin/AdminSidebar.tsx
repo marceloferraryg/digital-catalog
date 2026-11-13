@@ -22,6 +22,7 @@ type AdminSidebarProps = {
     username: string;
     role: string;
   };
+  permissions: string[] | null;
   open: boolean;
   onClose: () => void;
 };
@@ -31,36 +32,52 @@ const menuItems = [
     label: "Dashboard",
     href: "/admin",
     icon: LayoutDashboard,
+    permissions: [],
   },
   {
     label: "Produtos",
     href: "/admin/products",
     icon: Package,
+    permissions: [
+      "products.view",
+      "products.create",
+      "products.edit",
+      "products.delete",
+      "products.availability",
+      "products.price",
+      "products.images",
+    ],
   },
   {
     label: "Categorias",
     href: "/admin/categories",
     icon: Layers,
+    permissions: ["categories.view", "categories.manage"],
   },
   {
     label: "Marcas",
     href: "/admin/brands",
     icon: Tag,
+    permissions: ["brands.view", "brands.manage"],
   },
   {
     label: "Usuários",
     href: "/admin/users",
     icon: Users,
+    permissions: [],
+    masterOnly: true,
   },
   {
     label: "Configurações",
     href: "/admin/settings",
     icon: Settings,
+    permissions: ["settings.manage"],
   },
 ];
 
 export default function AdminSidebar({
   admin,
+  permissions,
   open,
   onClose,
 }: AdminSidebarProps) {
@@ -118,45 +135,71 @@ export default function AdminSidebar({
             Menu principal
           </p>
 
-          {menuItems.map((item) => {
-            const Icon = item.icon;
-            const active =
-              item.href === "/admin"
-                ? pathname === "/admin"
-                : pathname === item.href ||
-                  pathname.startsWith(`${item.href}/`);
+          {permissions === null && admin.role !== "master" ? (
+            <div className="mx-3 rounded-lg border border-(--border) p-3">
+              <p className="text-sm font-medium text-(--foreground)">
+                Erro ao carregar o menu
+              </p>
+              <p className="mt-1 text-xs text-(--muted)">
+                Saia da sua conta e entre novamente. Se o problema persistir,
+                contate o administrador.
+              </p>
+            </div>
+          ) : (
+            menuItems.map((item) => {
+              const Icon = item.icon;
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={`flex group items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition ${
-                  active
-                    ? "bg-(--primary)"
-                    : "hover:bg-(--background) hover:text-(--foreground)"
-                }`}
-              >
-                <Icon
-                  size={19}
-                  className={`${
+              const isMaster = admin.role === "master";
+
+              const hasPermission =
+                item.permissions.length === 0 ||
+                item.permissions.some((permission) =>
+                  permissions?.includes(permission),
+                );
+
+              if (item.masterOnly && !isMaster) return null;
+
+              if (!isMaster && !hasPermission) return null;
+
+              const active =
+                item.href === "/admin"
+                  ? pathname === "/admin"
+                  : pathname === item.href ||
+                    pathname.startsWith(`${item.href}/`);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  className={`flex group items-center gap-3 rounded-lg px-3 py-3 text-sm font-medium transition ${
                     active
-                      ? " text-black"
-                      : "text-(--muted) group-hover:text-(--foreground)"
-                  }`}
-                />
-                <p
-                  className={`${
-                    active
-                      ? " text-black font-bold"
-                      : "text-(--muted) group-hover:text-(--foreground)"
+                      ? "bg-(--primary)"
+                      : "hover:bg-(--background) hover:text-(--foreground)"
                   }`}
                 >
-                  {item.label}
-                </p>
-              </Link>
-            );
-          })}
+                  <Icon
+                    size={19}
+                    className={`${
+                      active
+                        ? "text-black"
+                        : "text-(--muted) group-hover:text-(--foreground)"
+                    }`}
+                  />
+
+                  <p
+                    className={`${
+                      active
+                        ? "text-black font-bold"
+                        : "text-(--muted) group-hover:text-(--foreground)"
+                    }`}
+                  >
+                    {item.label}
+                  </p>
+                </Link>
+              );
+            })
+          )}
         </nav>
 
         {/* Identificação */}
