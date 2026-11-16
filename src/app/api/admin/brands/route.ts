@@ -23,6 +23,18 @@ export async function GET() {
 
     const supabase = await createClient();
 
+    const { data: permitted, error: permissionError } = await supabase.rpc(
+      "has_admin_permission",
+      { permission_code: "brands.view" },
+    );
+
+    if (permissionError || !permitted) {
+      return NextResponse.json(
+        { error: "Você não tem permissão para visualizar marcas." },
+        { status: 403 },
+      );
+    }
+
     const { data, error } = await supabase
       .from("brands")
       .select("id, name, slug, active, created_at")
@@ -57,8 +69,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
 
-    const body = await request.json();
+    const supabase = await createClient();
 
+    const { data: permitted, error: permissionError } = await supabase.rpc(
+      "has_admin_permission",
+      { permission_code: "brands.manage" },
+    );
+
+    if (permissionError || !permitted) {
+      return NextResponse.json(
+        { error: "Você não tem permissão para cadastrar marcas." },
+        { status: 403 },
+      );
+    }
+
+    const body = await request.json();
     const name = typeof body.name === "string" ? body.name.trim() : "";
 
     if (!name || name.length > 80) {
@@ -76,8 +101,6 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     const { data, error } = await supabase
       .from("brands")
@@ -130,6 +153,20 @@ export async function PATCH(request: Request) {
 
     if (!admin) {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+
+    const supabase = await createClient();
+
+    const { data: permitted, error: permissionError } = await supabase.rpc(
+      "has_admin_permission",
+      { permission_code: "brands.manage" },
+    );
+
+    if (permissionError || !permitted) {
+      return NextResponse.json(
+        { error: "Você não tem permissão para alterar marcas." },
+        { status: 403 },
+      );
     }
 
     const body = await request.json();
@@ -185,8 +222,6 @@ export async function PATCH(request: Request) {
       );
     }
 
-    const supabase = await createClient();
-
     const { data, error } = await supabase
       .from("brands")
       .update(updates)
@@ -237,14 +272,26 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
 
+    const supabase = await createClient();
+
+    const { data: permitted, error: permissionError } = await supabase.rpc(
+      "has_admin_permission",
+      { permission_code: "brands.manage" },
+    );
+
+    if (permissionError || !permitted) {
+      return NextResponse.json(
+        { error: "Você não tem permissão para excluir marcas." },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
     const id = body.id;
 
     if (typeof id !== "string") {
       return NextResponse.json({ error: "Marca inválida." }, { status: 400 });
     }
-
-    const supabase = await createClient();
 
     const { error } = await supabase.from("brands").delete().eq("id", id);
 

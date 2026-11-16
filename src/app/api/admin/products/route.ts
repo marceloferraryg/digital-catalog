@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connection } from "next/server";
 import { revalidatePath } from "next/cache";
+
 import { getAdminUser } from "@/lib/supabase/auth";
 import { getAdminProducts } from "@/lib/supabase/products";
 import { createClient } from "@/lib/supabase/server";
@@ -13,6 +14,22 @@ export async function GET() {
 
     if (!admin) {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+
+    const supabase = await createClient();
+
+    const { data: permitted, error: permissionError } = await supabase.rpc(
+      "has_admin_permission",
+      {
+        permission_code: "products.view",
+      },
+    );
+
+    if (permissionError || !permitted) {
+      return NextResponse.json(
+        { error: "Você não tem permissão para visualizar produtos." },
+        { status: 403 },
+      );
     }
 
     const products = await getAdminProducts();
@@ -38,17 +55,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
 
+    const supabase = await createClient();
+
+    // Verifica permissão para cadastrar produtos.
+    const { data: permitted, error: permissionError } = await supabase.rpc(
+      "has_admin_permission",
+      {
+        permission_code: "products.create",
+      },
+    );
+
+    if (permissionError || !permitted) {
+      return NextResponse.json(
+        { error: "Você não tem permissão para cadastrar produtos." },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
 
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const slug = typeof body.slug === "string" ? body.slug.trim() : "";
     const category_id = body.category_id;
     const brand_id = body.brand_id || null;
+
     const price =
       body.price === "" || body.price === null || body.price === undefined
         ? null
         : Number(body.price);
+
     const available = body.available;
+
     const description =
       typeof body.description === "string"
         ? body.description.trim() || null
@@ -110,20 +147,6 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "A descrição deve ter no máximo 2.000 caracteres." },
         { status: 400 },
-      );
-    }
-
-    const supabase = await createClient();
-
-    const { data: permitted, error: permissionError } = await supabase.rpc(
-      "has_admin_permission",
-      { permission_code: "products.create" },
-    );
-
-    if (permissionError || !permitted) {
-      return NextResponse.json(
-        { error: "Você não tem permissão para cadastrar produtos." },
-        { status: 403 },
       );
     }
 

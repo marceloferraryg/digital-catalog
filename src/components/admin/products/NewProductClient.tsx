@@ -12,23 +12,31 @@ type SelectOption = {
 type NewProductClientProps = {
   categories: SelectOption[];
   brands: SelectOption[];
+  permissions: string[];
+  isMaster: boolean;
 };
 
 export default function NewProductClient({
   categories,
   brands,
+  permissions,
+  isMaster,
 }: NewProductClientProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   async function handleSubmit(data: ProductFormData) {
-    if (isSubmitting) return;
+    if (
+      isSubmitting ||
+      (!isMaster && !permissions.includes("products.create"))
+    ) {
+      return;
+    }
 
     setIsSubmitting(true);
     setError("");
 
     try {
-      // Separa as imagens dos demais dados.
       const { images, ...productData } = data;
 
       // Etapa 1: cadastra o produto.
@@ -110,6 +118,8 @@ export default function NewProductClient({
       <ProductForm
         categories={categories}
         brands={brands}
+        permissions={permissions}
+        isMaster={isMaster}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       />

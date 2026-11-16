@@ -24,6 +24,7 @@ export default function LogoutButton() {
         throw new Error(result.error || "Erro ao sair.");
       }
 
+      setLoading(false);
       router.replace("/admin/login");
       router.refresh();
     } catch (error) {

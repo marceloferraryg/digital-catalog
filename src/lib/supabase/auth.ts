@@ -27,7 +27,9 @@ export async function getAdminUser() {
   return admin;
 }
 
-export async function getAdminPermissions(userId: string) {
+export async function getAdminPermissions(
+  userId: string,
+): Promise<string[] | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -46,7 +48,13 @@ export async function getAdminPermissions(userId: string) {
     return null;
   }
 
-  return data.flatMap((item) =>
-    item.admin_permissions.map((permission) => permission.code),
-  );
+  return (data ?? []).flatMap((item) => {
+    const permission = item.admin_permissions;
+
+    if (!permission) return [];
+
+    const permissions = Array.isArray(permission) ? permission : [permission];
+
+    return permissions.map((item) => item.code);
+  });
 }

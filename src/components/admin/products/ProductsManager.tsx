@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-
 import Image from "next/image";
 import Link from "next/link";
 
@@ -22,10 +21,11 @@ import type { AdminProduct } from "@/lib/supabase/products";
 
 type ProductsManagerProps = {
   initialProducts: AdminProduct[];
+  permissions: string[];
+  isMaster: boolean;
 };
 
 type ViewMode = "grid" | "list";
-
 type AvailabilityFilter = "all" | "available" | "unavailable";
 
 function ProductImage({
@@ -74,7 +74,6 @@ function AvailabilityBadge({ available }: { available: boolean }) {
           available ? "bg-emerald-500" : "bg-red-500"
         }`}
       />
-
       {available ? "Disponível" : "Indisponível"}
     </span>
   );
@@ -100,6 +99,8 @@ function formatDate(date: string) {
 
 export default function ProductsManager({
   initialProducts,
+  permissions,
+  isMaster,
 }: ProductsManagerProps) {
   const [products, setProducts] = useState<AdminProduct[]>(initialProducts);
 
@@ -115,6 +116,14 @@ export default function ProductsManager({
   const [deletingProductId, setDeletingProductId] = useState<string | null>(
     null,
   );
+
+  // Verifica permissões. O Master sempre tem acesso.
+  const can = (permission: string) =>
+    isMaster || permissions.includes(permission);
+
+  const canCreate = can("products.create");
+  const canEdit = can("products.edit");
+  const canDelete = can("products.delete");
 
   const categories = useMemo(
     () =>
@@ -183,6 +192,8 @@ export default function ProductsManager({
   }
 
   async function handleDeleteProduct(product: AdminProduct) {
+    if (!canDelete) return;
+
     const confirmed = window.confirm(
       `Tem certeza que deseja excluir o produto "${product.name}"?\n\nEssa ação também excluirá as imagens cadastradas e não poderá ser desfeita.`,
     );
@@ -234,8 +245,19 @@ export default function ProductsManager({
 
         <Link
           href="/admin/products/new"
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-(--primary) px-4 
-                       transition-opacity hover:opacity-90"
+          aria-disabled={!canCreate}
+          tabIndex={canCreate ? 0 : -1}
+          onClick={(event) => {
+            if (!canCreate) event.preventDefault();
+          }}
+          title={
+            canCreate
+              ? "Cadastrar novo produto"
+              : "Você não tem permissão para cadastrar produtos"
+          }
+          className={`inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-(--primary) px-4 transition-opacity hover:opacity-90 ${
+            !canCreate ? "cursor-not-allowed opacity-50" : ""
+          }`}
         >
           <Plus size={22} color="black" />
           <span className="text-sm font-semibold text-black">Novo produto</span>
@@ -246,7 +268,6 @@ export default function ProductsManager({
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-xl border border-(--border) bg-(--surface) p-3 sm:p-4">
           <p className="text-xs text-(--muted) sm:text-sm">Total</p>
-
           <p className="mt-1 text-xl font-semibold text-(--foreground) sm:text-2xl">
             {products.length}
           </p>
@@ -254,7 +275,6 @@ export default function ProductsManager({
 
         <div className="rounded-xl border border-(--border) bg-(--surface) p-3 sm:p-4">
           <p className="text-xs text-(--muted) sm:text-sm">Disponíveis</p>
-
           <p className="mt-1 text-xl font-semibold text-emerald-500 sm:text-2xl">
             {availableCount}
           </p>
@@ -262,7 +282,6 @@ export default function ProductsManager({
 
         <div className="rounded-xl border border-(--border) bg-(--surface) p-3 sm:p-4">
           <p className="text-xs text-(--muted) sm:text-sm">Indisponíveis</p>
-
           <p className="mt-1 text-xl font-semibold text-red-500 sm:text-2xl">
             {unavailableCount}
           </p>
@@ -282,8 +301,7 @@ export default function ProductsManager({
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Buscar por nome, marca ou categoria..."
-            className="h-11 w-full rounded-lg border border-(--border) bg-(--background) pl-10 pr-4 
-                        text-sm text-(--foreground) outline-none transition focus:border-(--primary)"
+            className="h-11 w-full rounded-lg border border-(--border) bg-(--background) pl-10 pr-4 text-sm text-(--foreground) outline-none transition focus:border-(--primary)"
           />
         </div>
 
@@ -291,8 +309,7 @@ export default function ProductsManager({
           <select
             value={categoryFilter}
             onChange={(event) => setCategoryFilter(event.target.value)}
-            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm 
-                        text-(--foreground) outline-none focus:border-(--primary)"
+            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none focus:border-(--primary)"
           >
             <option value="all">Todas as categorias</option>
 
@@ -306,8 +323,7 @@ export default function ProductsManager({
           <select
             value={brandFilter}
             onChange={(event) => setBrandFilter(event.target.value)}
-            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm 
-                        text-(--foreground) outline-none focus:border-(--primary)"
+            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none focus:border-(--primary)"
           >
             <option value="all">Todas as marcas</option>
 
@@ -323,8 +339,7 @@ export default function ProductsManager({
             onChange={(event) =>
               setAvailabilityFilter(event.target.value as AvailabilityFilter)
             }
-            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 
-                        text-sm text-(--foreground) outline-none focus:border-(--primary)"
+            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none focus:border-(--primary)"
           >
             <option value="all">Todas as disponibilidades</option>
             <option value="available">Disponíveis</option>
@@ -375,14 +390,8 @@ export default function ProductsManager({
 
       {/* Conteúdo */}
       {filteredProducts.length === 0 ? (
-        <div
-          className="flex min-h-64 flex-col items-center justify-center rounded-xl   
-                        border border-(--border) bg-(--surface) px-4 py-10 text-center"
-        >
-          <div
-            className="mb-3 flex h-14 w-14 items-center justify-center rounded-full 
-                          bg-(--background) text-(--muted)"
-          >
+        <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-(--border) bg-(--surface) px-4 py-10 text-center">
+          <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-(--background) text-(--muted)">
             {products.length === 0 ? (
               <Package size={26} />
             ) : (
@@ -405,8 +414,19 @@ export default function ProductsManager({
           {products.length === 0 ? (
             <Link
               href="/admin/products/new"
-              className="mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-(--primary) px-4 
-                          text-sm font-semibold  hover:opacity-90"
+              aria-disabled={!canCreate}
+              tabIndex={canCreate ? 0 : -1}
+              onClick={(event) => {
+                if (!canCreate) event.preventDefault();
+              }}
+              title={
+                canCreate
+                  ? "Cadastrar produto"
+                  : "Você não tem permissão para cadastrar produtos"
+              }
+              className={`mt-5 inline-flex h-10 items-center gap-2 rounded-lg bg-(--primary) px-4 text-sm font-semibold hover:opacity-90 ${
+                !canCreate ? "cursor-not-allowed opacity-50" : ""
+              }`}
             >
               <Plus size={17} />
               <span className="text-sm font-semibold text-black">
@@ -417,8 +437,7 @@ export default function ProductsManager({
             <button
               type="button"
               onClick={clearFilters}
-              className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-(--primary) 
-                          hover:underline"
+              className="mt-5 inline-flex items-center gap-2 text-sm font-medium text-(--primary) hover:underline"
             >
               <X size={16} />
               <span className="text-sm font-medium text-(--primary)">
@@ -433,8 +452,7 @@ export default function ProductsManager({
           {filteredProducts.map((product) => (
             <article
               key={product.id}
-              className="overflow-hidden rounded-xl border border-(--border) bg-(--surface) 
-                          transition-colors hover:border-(--primary)/50"
+              className="overflow-hidden rounded-xl border border-(--border) bg-(--surface) transition-colors hover:border-(--primary)/50"
             >
               <div className="relative aspect-4/3">
                 <ProductImage product={product} className="h-full w-full" />
@@ -445,17 +463,18 @@ export default function ProductsManager({
               </div>
 
               <div className="space-y-3 p-4">
-                <div className=" flex flex-col space-x-0.5 ">
-                  <>
-                    <h3 className="line-clamp-2 min-h-10 font-semibold text-(--foreground) mb-2">
-                      {product.name}
-                    </h3>
-                  </>
+                <div className="flex flex-col space-x-0.5">
+                  <h3 className="mb-2 line-clamp-2 min-h-10 font-semibold text-(--foreground)">
+                    {product.name}
+                  </h3>
+
                   <div className="flex items-center gap-2">
                     <p className="text-xs text-(--muted)">
-                      {product.brand_name || "Sem marca"}{" "}
+                      {product.brand_name || "Sem marca"}
                     </p>
-                    <p className="text-3xl text-(--muted)"> · </p>
+
+                    <p className="text-3xl text-(--muted)">·</p>
+
                     <p className="text-xs text-(--muted)">
                       {product.category_name || "Sem categoria"}
                     </p>
@@ -481,7 +500,19 @@ export default function ProductsManager({
                 <div className="flex gap-2">
                   <Link
                     href={`/admin/products/${product.id}`}
-                    className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-(--border) text-sm font-medium text-(--foreground) transition hover:border-(--primary) hover:text-(--primary)"
+                    aria-disabled={!canEdit}
+                    tabIndex={canEdit ? 0 : -1}
+                    onClick={(event) => {
+                      if (!canEdit) event.preventDefault();
+                    }}
+                    title={
+                      canEdit
+                        ? "Editar produto"
+                        : "Você não tem permissão para editar produtos"
+                    }
+                    className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-(--border) text-sm font-medium text-(--foreground) transition hover:border-(--primary) hover:text-(--primary) ${
+                      !canEdit ? "cursor-not-allowed opacity-50" : ""
+                    }`}
                   >
                     <Pencil size={15} />
                     Editar
@@ -490,12 +521,14 @@ export default function ProductsManager({
                   <button
                     type="button"
                     onClick={() => handleDeleteProduct(product)}
-                    disabled={deletingProductId === product.id}
+                    disabled={!canDelete || deletingProductId === product.id}
                     aria-label={`Excluir ${product.name}`}
-                    title="Excluir produto"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg 
-                                border border-red-500/30 text-red-500 transition 
-                                hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+                    title={
+                      canDelete
+                        ? "Excluir produto"
+                        : "Você não tem permissão para excluir produtos"
+                    }
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-red-500/30 text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {deletingProductId === product.id ? (
                       <LoaderCircle size={17} className="animate-spin" />
@@ -549,8 +582,7 @@ export default function ProductsManager({
                 {filteredProducts.map((product) => (
                   <tr
                     key={product.id}
-                    className="border-b border-(--border) last:border-0 transition 
-                                hover:bg-(--background)"
+                    className="border-b border-(--border) last:border-0 transition hover:bg-(--background)"
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
@@ -560,7 +592,7 @@ export default function ProductsManager({
                         />
 
                         <div className="max-w-48">
-                          <p className="text-sm font-medium text-(--foreground) line-clamp-2 mb-1">
+                          <p className="mb-1 line-clamp-2 text-sm font-medium text-(--foreground)">
                             {product.name}
                           </p>
 
@@ -602,8 +634,19 @@ export default function ProductsManager({
                         <Link
                           href={`/admin/products/${product.id}`}
                           aria-label={`Editar ${product.name}`}
-                          title="Editar produto"
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-(--muted) transition hover:bg-(--background) hover:text-(--primary)"
+                          aria-disabled={!canEdit}
+                          tabIndex={canEdit ? 0 : -1}
+                          onClick={(event) => {
+                            if (!canEdit) event.preventDefault();
+                          }}
+                          title={
+                            canEdit
+                              ? "Editar produto"
+                              : "Você não tem permissão para editar produtos"
+                          }
+                          className={`inline-flex h-9 w-9 items-center justify-center rounded-lg text-(--muted) transition hover:bg-(--background) hover:text-(--primary) ${
+                            !canEdit ? "cursor-not-allowed opacity-50" : ""
+                          }`}
                         >
                           <Pencil size={17} />
                         </Link>
@@ -611,9 +654,15 @@ export default function ProductsManager({
                         <button
                           type="button"
                           onClick={() => handleDeleteProduct(product)}
-                          disabled={deletingProductId === product.id}
+                          disabled={
+                            !canDelete || deletingProductId === product.id
+                          }
                           aria-label={`Excluir ${product.name}`}
-                          title="Excluir produto"
+                          title={
+                            canDelete
+                              ? "Excluir produto"
+                              : "Você não tem permissão para excluir produtos"
+                          }
                           className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           {deletingProductId === product.id ? (

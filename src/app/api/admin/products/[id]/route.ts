@@ -21,6 +21,24 @@ export async function PATCH(request: Request, { params }: RouteContext) {
 
     const { id } = await params;
     const body = await request.json();
+    const supabase = await createClient();
+
+    const { data: existingProduct, error: productError } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (productError) {
+      throw productError;
+    }
+
+    if (!existingProduct) {
+      return NextResponse.json(
+        { error: "Produto não encontrado." },
+        { status: 404 },
+      );
+    }
 
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const slug = typeof body.slug === "string" ? body.slug.trim() : "";
@@ -98,97 +116,132 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       );
     }
 
-    const supabase = await createClient();
+    const coreFieldsChanged =
+      name !== existingProduct.name ||
+      slug !== existingProduct.slug ||
+      category_id !== existingProduct.category_id ||
+      brand_id !== existingProduct.brand_id ||
+      description !== existingProduct.description ||
+      JSON.stringify(specifications) !==
+        JSON.stringify(existingProduct.specifications ?? {});
 
-    const { data: permitted, error: permissionError } = await supabase.rpc(
-      "has_admin_permission",
-      {
-        permission_code: "products.create",
-      },
-    );
+    const priceChanged = price !== existingProduct.price;
+    const availabilityChanged = available !== existingProduct.available;
 
-    if (permissionError || !permitted) {
-      return NextResponse.json(
-        { error: "Você não tem permissão para editar produtos." },
-        { status: 403 },
-      );
-    }
+    const checkPermission = async (permissionCode: string) => {
+      const { data, error } = await supabase.rpc("has_admin_permission", {
+        permission_code: permissionCode,
+      });
 
-    const { data: existingProduct, error: productError } = await supabase
-      .from("products")
-      .select("id")
-      .eq("id", id)
-      .maybeSingle();
+      return !error && data === true;
+    };
 
-    if (productError) {
-      throw productError;
-    }
+    if (coreFieldsChanged) {
+      const permitted = await checkPermission("products.edit");
 
-    if (!existingProduct) {
-      return NextResponse.json(
-        { error: "Produto não encontrado." },
-        { status: 404 },
-      );
-    }
-
-    const { data: category } = await supabase
-      .from("categories")
-      .select("id")
-      .eq("id", category_id)
-      .eq("active", true)
-      .maybeSingle();
-
-    if (!category) {
-      return NextResponse.json(
-        { error: "A categoria selecionada não está disponível." },
-        { status: 400 },
-      );
-    }
-
-    if (brand_id) {
-      const { data: brand } = await supabase
-        .from("brands")
-        .select("id")
-        .eq("id", brand_id)
-        .eq("active", true)
-        .maybeSingle();
-
-      if (!brand) {
+      if (!permitted) {
         return NextResponse.json(
-          { error: "A marca selecionada não está disponível." },
-          { status: 400 },
+          { error: "Você não tem permissão para editar os dados do produto." },
+          { status: 403 },
         );
       }
     }
 
-    const { data: duplicate } = await supabase
-      .from("products")
-      .select("id")
-      .eq("slug", slug)
-      .neq("id", id)
-      .maybeSingle();
+    if (priceChanged) {
+      const permitted = await checkPermission("products.price");
 
-    if (duplicate) {
-      return NextResponse.json(
-        { error: "Já existe outro produto com esse endereço (slug)." },
-        { status: 409 },
-      );
+      if (!permitted) {
+        return NextResponse.json(
+          { error: "Você não tem permissão para alterar o preço." },
+          { status: 403 },
+        );
+      }
     }
 
-    const { data: product, error } = await supabase
-      .from("products")
-      .update({
+    if (availabilityChanged) {
+      const permitted = await checkPermission("products.availability");
+
+      if (!permitted) {
+        return NextResponse.json(
+          { error: "Você não tem permissão para alterar a disponibilidade." },
+          { status: 403 },
+        );
+      }
+    }
+
+    if (coreFieldsChanged) {
+      const { data: category } = await supabase
+        .from("categories")
+        .select("id")
+        .eq("id", category_id)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (!category) {
+        return NextResponse.json(
+          { error: "A categoria selecionada não está disponível." },
+          { status: 400 },
+        );
+      }
+
+      if (brand_id) {
+        const { data: brand } = await supabase
+          .from("brands")
+          .select("id")
+          .eq("id", brand_id)
+          .eq("active", true)
+          .maybeSingle();
+
+        if (!brand) {
+          return NextResponse.json(
+            { error: "A marca selecionada não está disponível." },
+            { status: 400 },
+          );
+        }
+      }
+
+      const { data: duplicate } = await supabase
+        .from("products")
+        .select("id")
+        .eq("slug", slug)
+        .neq("id", id)
+        .maybeSingle();
+
+      if (duplicate) {
+        return NextResponse.json(
+          { error: "Já existe outro produto com esse endereço (slug)." },
+          { status: 409 },
+        );
+      }
+    }
+
+    const updateData: Record<string, unknown> = {
+      updated_by: admin.id,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (coreFieldsChanged) {
+      Object.assign(updateData, {
         name,
         slug,
         category_id,
         brand_id,
-        price,
-        available,
         description,
         specifications,
-        updated_by: admin.id,
-        updated_at: new Date().toISOString(),
-      })
+      });
+    }
+
+    if (priceChanged) {
+      updateData.price = price;
+    }
+
+    if (availabilityChanged) {
+      updateData.available = available;
+    }
+
+    const { data: product, error } = await supabase
+      .from("products")
+      .update(updateData)
       .eq("id", id)
       .select()
       .single();
@@ -232,11 +285,10 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
     const { id } = await params;
     const supabase = await createClient();
 
-    // Verifica a permissão administrativa.
     const { data: permitted, error: permissionError } = await supabase.rpc(
       "has_admin_permission",
       {
-        permission_code: "products.create",
+        permission_code: "products.delete",
       },
     );
 
@@ -247,7 +299,6 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
       );
     }
 
-    // Busca o produto antes da exclusão.
     const { data: product, error: productError } = await supabase
       .from("products")
       .select("id, slug")
@@ -265,7 +316,6 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
       );
     }
 
-    // Guarda os caminhos das imagens para removê-las do Storage.
     const { data: images, error: imagesError } = await supabase
       .from("product_images")
       .select("storage_path")
@@ -280,9 +330,6 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
       );
     }
 
-    // Exclui o produto do banco.
-    // A relação com product_images precisa permitir a exclusão
-    // dos registros relacionados (por exemplo, ON DELETE CASCADE).
     const { error: deleteError } = await supabase
       .from("products")
       .delete()
@@ -307,7 +354,6 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
       );
     }
 
-    // Remove os arquivos do Supabase Storage.
     const storagePaths = (images ?? [])
       .map((image) => image.storage_path)
       .filter((path): path is string => Boolean(path));
@@ -330,7 +376,6 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
       }
     }
 
-    // Atualiza as páginas relacionadas ao produto.
     revalidatePath("/admin/products");
     revalidatePath("/products");
     revalidatePath(`/products/${product.slug}`);

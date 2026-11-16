@@ -12,6 +12,24 @@ function generateSlug(name: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+// Verificar permissão do administrador
+async function checkPermission(
+  permissionCode: "categories.view" | "categories.manage",
+) {
+  const supabase = await createClient();
+
+  const { data: permitted, error } = await supabase.rpc(
+    "has_admin_permission",
+    { permission_code: permissionCode },
+  );
+
+  return {
+    supabase,
+    permitted: !error && permitted === true,
+    error,
+  };
+}
+
 // GET: listar categorias
 export async function GET() {
   try {
@@ -21,7 +39,25 @@ export async function GET() {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
 
-    const supabase = await createClient();
+    const {
+      supabase,
+      permitted,
+      error: permissionError,
+    } = await checkPermission("categories.view");
+
+    if (!permitted) {
+      if (permissionError) {
+        console.error(
+          "Erro ao verificar permissão de categorias:",
+          permissionError.message,
+        );
+      }
+
+      return NextResponse.json(
+        { error: "Você não tem permissão para visualizar categorias." },
+        { status: 403 },
+      );
+    }
 
     const { data, error } = await supabase
       .from("categories")
@@ -58,6 +94,26 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
 
+    const {
+      supabase,
+      permitted,
+      error: permissionError,
+    } = await checkPermission("categories.manage");
+
+    if (!permitted) {
+      if (permissionError) {
+        console.error(
+          "Erro ao verificar permissão de categorias:",
+          permissionError.message,
+        );
+      }
+
+      return NextResponse.json(
+        { error: "Você não tem permissão para cadastrar categorias." },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
     const name = typeof body.name === "string" ? body.name.trim() : "";
 
@@ -76,8 +132,6 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     // Verifica o limite de oito categorias
     const { count, error: countError } = await supabase
@@ -173,8 +227,27 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
 
+    const {
+      supabase,
+      permitted,
+      error: permissionError,
+    } = await checkPermission("categories.manage");
+
+    if (!permitted) {
+      if (permissionError) {
+        console.error(
+          "Erro ao verificar permissão de categorias:",
+          permissionError.message,
+        );
+      }
+
+      return NextResponse.json(
+        { error: "Você não tem permissão para alterar categorias." },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
-    const supabase = await createClient();
 
     // Reorganizar categorias
     if (body.action === "reorder") {
@@ -225,7 +298,11 @@ export async function PATCH(request: Request) {
         );
       }
 
-      const updates: { name?: string; slug?: string; active?: boolean } = {};
+      const updates: {
+        name?: string;
+        slug?: string;
+        active?: boolean;
+      } = {};
 
       if (name !== undefined) {
         if (
@@ -317,6 +394,26 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
 
+    const {
+      supabase,
+      permitted,
+      error: permissionError,
+    } = await checkPermission("categories.manage");
+
+    if (!permitted) {
+      if (permissionError) {
+        console.error(
+          "Erro ao verificar permissão de categorias:",
+          permissionError.message,
+        );
+      }
+
+      return NextResponse.json(
+        { error: "Você não tem permissão para excluir categorias." },
+        { status: 403 },
+      );
+    }
+
     const body = await request.json();
     const id = body.id;
 
@@ -326,8 +423,6 @@ export async function DELETE(request: Request) {
         { status: 400 },
       );
     }
-
-    const supabase = await createClient();
 
     const { error } = await supabase.from("categories").delete().eq("id", id);
 

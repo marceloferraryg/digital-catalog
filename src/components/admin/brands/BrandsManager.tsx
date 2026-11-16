@@ -14,10 +14,18 @@ type Brand = {
 
 type BrandsManagerProps = {
   initialBrands: Brand[];
+  permissions: string[];
+  isMaster: boolean;
 };
 
-export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
+export default function BrandsManager({
+  initialBrands,
+  permissions,
+  isMaster,
+}: BrandsManagerProps) {
   const router = useRouter();
+
+  const canManage = isMaster || permissions.includes("brands.manage");
 
   const [brands, setBrands] = useState(initialBrands);
 
@@ -36,7 +44,6 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
 
   // Status
   const [changingStatusId, setChangingStatusId] = useState<string | null>(null);
-
   const [generalError, setGeneralError] = useState("");
 
   // Requisição de atualização
@@ -67,6 +74,8 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
   // Cadastrar marca
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!canManage) return;
 
     setCreateError("");
 
@@ -120,6 +129,8 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
 
   // Iniciar edição
   function startEditing(brand: Brand) {
+    if (!canManage) return;
+
     setEditingId(brand.id);
     setEditingName(brand.name);
     setGeneralError("");
@@ -129,7 +140,7 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
   async function handleUpdate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!editingId) return;
+    if (!canManage || !editingId) return;
 
     const name = editingName.trim();
 
@@ -171,6 +182,8 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
 
   // Ativar ou desativar
   async function handleToggleStatus(brand: Brand) {
+    if (!canManage) return;
+
     setChangingStatusId(brand.id);
     setGeneralError("");
 
@@ -197,6 +210,8 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
 
   // Excluir marca
   async function handleDelete(brand: Brand) {
+    if (!canManage) return;
+
     const confirmed = window.confirm(
       `Deseja realmente excluir a marca "${brand.name}"?`,
     );
@@ -241,7 +256,6 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
       <div className="mb-8">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold text-(--foreground)">Marcas</h1>
-
           <p className="text-sm text-(--muted)">
             As marcas identificam os fabricantes dos produtos e ajudam os
             clientes a encontrar produtos de suas marcas preferidas.
@@ -266,13 +280,18 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
             }}
             placeholder="Digite o nome da marca"
             maxLength={40}
-            disabled={creating}
-            className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) px-4 py-3 text-sm text-(--foreground) outline-none transition disabled:opacity-50"
+            disabled={!canManage || creating}
+            className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) px-4 py-3 text-sm text-(--foreground) outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
           />
 
           <button
             type="submit"
-            disabled={creating || !newName.trim()}
+            disabled={!canManage || creating || !newName.trim()}
+            title={
+              !canManage
+                ? "Você não tem permissão para gerenciar marcas"
+                : undefined
+            }
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) px-6 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus size={18} />
@@ -312,7 +331,6 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
             <p className="font-medium text-(--foreground)">
               Nenhuma marca cadastrada
             </p>
-
             <p className="mt-2 text-sm text-(--muted)">
               Comece adicionando a primeira marca do catálogo.
             </p>
@@ -383,11 +401,17 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
                           brand.active ? "ativa" : "inativa"
                         }`}
                         disabled={
+                          !canManage ||
                           changingStatusId === brand.id ||
                           deletingId === brand.id ||
                           editingId !== null
                         }
                         onClick={() => handleToggleStatus(brand)}
+                        title={
+                          !canManage
+                            ? "Você não tem permissão para alterar o status"
+                            : undefined
+                        }
                         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50 ${
                           brand.active ? "bg-green-500" : "bg-gray-500"
                         }`}
@@ -417,13 +441,18 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
                         type="button"
                         onClick={() => startEditing(brand)}
                         disabled={
+                          !canManage ||
                           deletingId === brand.id ||
                           changingStatusId !== null ||
                           editingId !== null
                         }
-                        title="Editar marca"
+                        title={
+                          !canManage
+                            ? "Você não tem permissão para editar marcas"
+                            : "Editar marca"
+                        }
                         aria-label={`Editar ${brand.name}`}
-                        className="size-10 rounded-full p-2 text-(--muted) transition hover:bg-(--background) hover:text-(--foreground) disabled:opacity-40"
+                        className="size-10 rounded-full p-2 text-(--muted) transition hover:bg-(--background) hover:text-(--foreground) disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Pencil size={20} />
                       </button>
@@ -432,13 +461,18 @@ export default function BrandsManager({ initialBrands }: BrandsManagerProps) {
                         type="button"
                         onClick={() => handleDelete(brand)}
                         disabled={
+                          !canManage ||
                           deletingId === brand.id ||
                           changingStatusId !== null ||
                           editingId !== null
                         }
-                        title="Excluir marca"
+                        title={
+                          !canManage
+                            ? "Você não tem permissão para excluir marcas"
+                            : "Excluir marca"
+                        }
                         aria-label={`Excluir ${brand.name}`}
-                        className="size-10 rounded-full p-2 text-(--muted) transition hover:bg-red-500/10 hover:text-red-500 disabled:opacity-40"
+                        className="size-10 rounded-full p-2 text-(--muted) transition hover:bg-red-500/10 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Trash2 size={20} />
                       </button>

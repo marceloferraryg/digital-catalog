@@ -20,6 +20,16 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+async function checkImagesPermission(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+) {
+  const { data, error } = await supabase.rpc("has_admin_permission", {
+    permission_code: "products.images",
+  });
+
+  return !error && data === true;
+}
+
 // ======================================================
 // POST - Enviar imagens
 // ======================================================
@@ -39,14 +49,9 @@ export async function POST(request: Request, { params }: RouteContext) {
     const { id: productId } = await params;
     const supabase = await createClient();
 
-    const { data: permitted, error: permissionError } = await supabase.rpc(
-      "has_admin_permission",
-      {
-        permission_code: "products.images",
-      },
-    );
+    const permitted = await checkImagesPermission(supabase);
 
-    if (permissionError || !permitted) {
+    if (!permitted) {
       return NextResponse.json(
         { error: "Você não tem permissão para gerenciar imagens." },
         { status: 403 },
@@ -59,7 +64,11 @@ export async function POST(request: Request, { params }: RouteContext) {
       .eq("id", productId)
       .maybeSingle();
 
-    if (productError || !product) {
+    if (productError) {
+      throw productError;
+    }
+
+    if (!product) {
       return NextResponse.json(
         { error: "Produto não encontrado." },
         { status: 404 },
@@ -212,22 +221,32 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     const { id: productId } = await params;
     const supabase = await createClient();
 
-    // Verifica permissão.
-    const { data: permitted, error: permissionError } = await supabase.rpc(
-      "has_admin_permission",
-      {
-        permission_code: "products.images",
-      },
-    );
+    const permitted = await checkImagesPermission(supabase);
 
-    if (permissionError || !permitted) {
+    if (!permitted) {
       return NextResponse.json(
         { error: "Você não tem permissão para gerenciar imagens." },
         { status: 403 },
       );
     }
 
-    // Recebe os IDs das imagens que serão excluídas.
+    const { data: product, error: productError } = await supabase
+      .from("products")
+      .select("id")
+      .eq("id", productId)
+      .maybeSingle();
+
+    if (productError) {
+      throw productError;
+    }
+
+    if (!product) {
+      return NextResponse.json(
+        { error: "Produto não encontrado." },
+        { status: 404 },
+      );
+    }
+
     const body = await request.json();
     const imageIds = body.imageIds;
 
@@ -250,7 +269,6 @@ export async function DELETE(request: Request, { params }: RouteContext) {
 
     const uniqueImageIds = [...new Set(imageIds)];
 
-    // Busca somente imagens pertencentes ao produto.
     const { data: imagesToDelete, error: imagesError } = await supabase
       .from("product_images")
       .select("id, storage_path, is_primary")
@@ -272,7 +290,6 @@ export async function DELETE(request: Request, { params }: RouteContext) {
 
     const deletingPrimary = imagesToDelete.some((image) => image.is_primary);
 
-    // Exclui os registros do banco.
     const { error: deleteError } = await supabase
       .from("product_images")
       .delete()
@@ -283,7 +300,6 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       throw deleteError;
     }
 
-    // Remove os arquivos do Storage.
     const storagePaths = imagesToDelete.map((image) => image.storage_path);
 
     const { error: storageError } = await supabase.storage
@@ -294,7 +310,6 @@ export async function DELETE(request: Request, { params }: RouteContext) {
       console.error("Erro ao remover arquivos do Storage:", storageError);
     }
 
-    // Se a capa foi removida, promove a primeira imagem restante.
     if (deletingPrimary) {
       const { data: remainingImages, error: remainingError } = await supabase
         .from("product_images")

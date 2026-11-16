@@ -26,12 +26,18 @@ type Category = {
 
 type CategoriesManagerProps = {
   initialCategories: Category[];
+  permissions: string[];
+  isMaster: boolean;
 };
 
 export default function CategoriesManager({
   initialCategories,
+  permissions,
+  isMaster,
 }: CategoriesManagerProps) {
   const router = useRouter();
+
+  const canManage = isMaster || permissions.includes("categories.manage");
 
   const [categories, setCategories] = useState(initialCategories);
 
@@ -94,6 +100,8 @@ export default function CategoriesManager({
   async function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (!canManage) return;
+
     setCreateError("");
 
     const name = newName.trim();
@@ -151,6 +159,8 @@ export default function CategoriesManager({
 
   // Iniciar edição
   function startEditing(category: Category) {
+    if (!canManage) return;
+
     setEditingId(category.id);
     setEditingName(category.name);
     setGeneralError("");
@@ -160,7 +170,7 @@ export default function CategoriesManager({
   async function handleUpdate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!editingId) return;
+    if (!canManage || !editingId) return;
 
     const name = editingName.trim();
 
@@ -202,6 +212,8 @@ export default function CategoriesManager({
 
   // Ativar ou desativar
   async function handleToggleStatus(category: Category) {
+    if (!canManage) return;
+
     setChangingStatusId(category.id);
     setGeneralError("");
 
@@ -228,6 +240,8 @@ export default function CategoriesManager({
 
   // Excluir categoria
   async function handleDelete(category: Category) {
+    if (!canManage) return;
+
     const confirmed = window.confirm(
       `Deseja realmente excluir a categoria "${category.name}"?`,
     );
@@ -275,6 +289,8 @@ export default function CategoriesManager({
 
   // Entrar no modo de organização
   function startOrdering() {
+    if (!canManage) return;
+
     setOriginalOrder([...categories]);
     setOrderingMode(true);
     setOrderError("");
@@ -284,6 +300,8 @@ export default function CategoriesManager({
 
   // Cancelar organização
   function cancelOrdering() {
+    if (!canManage || savingOrder) return;
+
     setCategories(originalOrder);
     setOrderingMode(false);
     setDraggedId(null);
@@ -292,6 +310,8 @@ export default function CategoriesManager({
 
   // Reorganizar posições localmente
   function moveCategory(fromIndex: number, toIndex: number) {
+    if (!canManage || savingOrder) return;
+
     if (toIndex < 0 || toIndex >= categories.length || fromIndex === toIndex) {
       return;
     }
@@ -299,6 +319,7 @@ export default function CategoriesManager({
     setCategories((current) => {
       const updated = [...current];
       const [moved] = updated.splice(fromIndex, 1);
+
       updated.splice(toIndex, 0, moved);
 
       return updated.map((category, index) => ({
@@ -310,7 +331,7 @@ export default function CategoriesManager({
 
   // Arrastar e soltar
   function handleDrop(targetId: string) {
-    if (!draggedId || draggedId === targetId) return;
+    if (!canManage || !draggedId || draggedId === targetId) return;
 
     const fromIndex = categories.findIndex(
       (category) => category.id === draggedId,
@@ -326,6 +347,8 @@ export default function CategoriesManager({
 
   // Salvar nova ordem no banco
   async function saveOrder() {
+    if (!canManage || savingOrder) return;
+
     setSavingOrder(true);
     setOrderError("");
 
@@ -375,7 +398,7 @@ export default function CategoriesManager({
   );
 
   return (
-    <div className="mx-auto max-w-7xl mb-8">
+    <div className="mx-auto mb-8 max-w-7xl">
       {/* Cabeçalho */}
       <div className="mb-8">
         <div className="flex flex-col gap-1">
@@ -388,23 +411,20 @@ export default function CategoriesManager({
         </div>
       </div>
 
-      {/* -------------------- Cadastro ---------------------*/}
+      {/* Cadastro */}
       {!orderingMode && (
         <div className="mb-8 rounded-xl border border-(--border) bg-(--surface) p-5">
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <h2 className="font-semibold">Adicionar categoria</h2>
 
-            <span
-              className="w-fit rounded-full border border-(--border) px-4 py-2 
-                              text-sm font-medium text-(--muted) bg-(--background)"
-            >
+            <span className="w-fit rounded-full border border-(--border) bg-(--background) px-4 py-2 text-sm font-medium text-(--muted)">
               {categories.length} de 8 categorias
             </span>
           </div>
 
           <form
             onSubmit={handleCreate}
-            className="flex flex-col gap-3 sm:flex-row mb-3"
+            className="mb-3 flex flex-col gap-3 sm:flex-row"
           >
             <input
               type="text"
@@ -413,19 +433,27 @@ export default function CategoriesManager({
                 setNewName(event.target.value);
                 setCreateError("");
               }}
-              placeholder={`${categories.length === 8 ? "Limite de categorias atingido" : "Digite o nome da categoria"}`}
+              placeholder={
+                limitReached
+                  ? "Limite de categorias atingido"
+                  : "Digite o nome da categoria"
+              }
               maxLength={40}
-              disabled={limitReached || creating}
-              className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) px-4 py-3 
-                          text-sm text-(--foreground) outline-none transition disabled:opacity-50"
+              disabled={!canManage || limitReached || creating}
+              className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) px-4 py-3 text-sm text-(--foreground) outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
             />
 
             <button
               type="submit"
-              disabled={limitReached || creating || !newName.trim()}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) px-6 py-3 
-                          text-sm font-semibold text-black transition hover:opacity-90 
-                          disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={
+                !canManage || limitReached || creating || !newName.trim()
+              }
+              title={
+                !canManage
+                  ? "Você não tem permissão para gerenciar categorias"
+                  : undefined
+              }
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) px-6 py-3 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Plus size={18} />
               {creating ? "Adicionando..." : "Adicionar"}
@@ -447,12 +475,9 @@ export default function CategoriesManager({
         </div>
       )}
 
-      {/* -------------------- Listagem --------------------*/}
+      {/* Listagem */}
       <div className="overflow-hidden rounded-lg border border-(--border) bg-(--surface)">
-        <div
-          className="flex flex-col gap-3 border-b border-(--border) px-5 py-4 
-                          sm:flex-row sm:items-center sm:justify-between"
-        >
+        <div className="flex flex-col gap-3 border-b border-(--border) px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="mb-2 font-semibold">Categorias cadastradas</h2>
 
@@ -469,10 +494,8 @@ export default function CategoriesManager({
                 <button
                   type="button"
                   onClick={cancelOrdering}
-                  disabled={savingOrder}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg 
-                              border border-(--border) px-4 py-2.5 text-sm font-medium transition 
-                              bg-(--background) hover:bg-(--surface-hover) disabled:opacity-50"
+                  disabled={!canManage || savingOrder}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-(--border) bg-(--background) px-4 py-2.5 text-sm font-medium transition hover:bg-(--surface-hover) disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <X size={16} />
                   Cancelar
@@ -481,10 +504,8 @@ export default function CategoriesManager({
                 <button
                   type="button"
                   onClick={saveOrder}
-                  disabled={!orderChanged || savingOrder}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) 
-                              px-8 py-2.5 text-sm font-semibold text-black transition 
-                              hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={!canManage || !orderChanged || savingOrder}
+                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-(--primary) px-8 py-2.5 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Save size={16} />
                   {savingOrder ? "Salvando..." : "Salvar"}
@@ -494,9 +515,13 @@ export default function CategoriesManager({
               <button
                 type="button"
                 onClick={startOrdering}
-                className="inline-flex items-center justify-center gap-2 rounded-lg border border-(--border) 
-                            px-4 py-2.5 text-sm font-medium transition 
-                            bg-(--background) hover:bg-(--surface-hover) disabled:opacity-50"
+                disabled={!canManage}
+                title={
+                  !canManage
+                    ? "Você não tem permissão para organizar categorias"
+                    : undefined
+                }
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-(--border) bg-(--background) px-4 py-2.5 text-sm font-medium transition hover:bg-(--surface-hover) disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ArrowUpDown size={16} />
                 Organizar categorias
@@ -537,16 +562,16 @@ export default function CategoriesManager({
             {categories.map((category, index) => (
               <div
                 key={category.id}
-                draggable={orderingMode && !savingOrder}
+                draggable={canManage && orderingMode && !savingOrder}
                 onDragStart={(event) => {
-                  if (!orderingMode || savingOrder) return;
+                  if (!canManage || !orderingMode || savingOrder) return;
 
                   setDraggedId(category.id);
                   event.dataTransfer.effectAllowed = "move";
                   event.dataTransfer.setData("text/plain", category.id);
                 }}
                 onDragOver={(event) => {
-                  if (orderingMode) {
+                  if (canManage && orderingMode && !savingOrder) {
                     event.preventDefault();
                     event.dataTransfer.dropEffect = "move";
                   }
@@ -556,26 +581,23 @@ export default function CategoriesManager({
                   handleDrop(category.id);
                 }}
                 onDragEnd={() => setDraggedId(null)}
-                className={`flex flex-col gap-3 px-5 py-4 transition sm:flex-row sm:items-center 
-                              sm:justify-between ${
-                                orderingMode && draggedId === category.id
-                                  ? "opacity-30"
-                                  : ""
-                              } ${
-                                orderingMode
-                                  ? "bg-(--background)/40"
-                                  : "hover:bg-(--background)/30"
-                              }`}
+                className={`flex flex-col gap-3 px-5 py-4 transition sm:flex-row sm:items-center sm:justify-between ${
+                  orderingMode && draggedId === category.id ? "opacity-30" : ""
+                } ${
+                  orderingMode
+                    ? "bg-(--background)/40"
+                    : "hover:bg-(--background)/30"
+                }`}
               >
-                {/*  --------------------Nome e alça de arraste  --------------------*/}
-
+                {/* Nome e alça de arraste */}
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                   {orderingMode && (
                     <button
                       type="button"
                       aria-label={`Arrastar ${category.name}`}
                       title="Arraste para reorganizar"
-                      className="cursor-grab touch-none text-(--muted) active:cursor-grabbing"
+                      disabled={!canManage || savingOrder}
+                      className="cursor-grab touch-none text-(--muted) active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       <GripVertical size={22} />
                     </button>
@@ -598,19 +620,19 @@ export default function CategoriesManager({
                         onChange={(event) => setEditingName(event.target.value)}
                         maxLength={80}
                         autoFocus
-                        disabled={updating}
-                        className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) 
-                                    px-3 py-2 text-sm outline-none "
+                        disabled={!canManage || updating}
+                        className="min-w-0 flex-1 rounded-lg border border-(--border) bg-(--background) px-3 py-2 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
                       />
 
-                      <div className="flex gap-4 items-center justify-end mt-1 sm:mt-0 sm:ml-2">
+                      <div className="mt-1 flex items-center justify-end gap-4 sm:ml-2 sm:mt-0">
                         <button
                           type="submit"
-                          disabled={updating || !editingName.trim()}
+                          disabled={
+                            !canManage || updating || !editingName.trim()
+                          }
                           title="Salvar nome"
                           aria-label="Salvar nome"
-                          className="rounded-full w-10 h-10 bg-(--primary) p-2 text-black transition 
-                                      hover:opacity-90 disabled:opacity-50 items-center justify-center flex"
+                          className="flex size-10 items-center justify-center rounded-full bg-(--primary) p-2 text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <Check size={18} color="black" strokeWidth={3} />
                         </button>
@@ -621,8 +643,7 @@ export default function CategoriesManager({
                           disabled={updating}
                           title="Cancelar edição"
                           aria-label="Cancelar edição"
-                          className="rounded-full w-10 h-10 border border-(--border) p-2 transition 
-                                      hover:bg-(--background) items-center justify-center flex"
+                          className="flex size-10 items-center justify-center rounded-full border border-(--border) p-2 transition hover:bg-(--background) disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <X size={18} color="white" strokeWidth={3} />
                         </button>
@@ -635,11 +656,10 @@ export default function CategoriesManager({
                   )}
                 </div>
 
-                {/*  --------------------Status e ações  --------------------*/}
-
+                {/* Status e ações */}
                 {!orderingMode && editingId !== category.id && (
                   <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end">
-                    <div className="flex items-center gap-4 mr-4">
+                    <div className="mr-4 flex items-center gap-4">
                       <button
                         type="button"
                         role="switch"
@@ -648,11 +668,17 @@ export default function CategoriesManager({
                           category.active ? "ativa" : "inativa"
                         }`}
                         disabled={
+                          !canManage ||
                           changingStatusId === category.id ||
                           deletingId === category.id ||
                           editingId !== null
                         }
                         onClick={() => handleToggleStatus(category)}
+                        title={
+                          !canManage
+                            ? "Você não tem permissão para alterar o status"
+                            : undefined
+                        }
                         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50 ${
                           category.active ? "bg-green-500" : "bg-gray-500"
                         }`}
@@ -682,13 +708,18 @@ export default function CategoriesManager({
                         type="button"
                         onClick={() => startEditing(category)}
                         disabled={
+                          !canManage ||
                           deletingId === category.id ||
                           changingStatusId !== null ||
                           editingId !== null
                         }
-                        title="Editar categoria"
+                        title={
+                          !canManage
+                            ? "Você não tem permissão para editar categorias"
+                            : "Editar categoria"
+                        }
                         aria-label={`Editar ${category.name}`}
-                        className="rounded-full w-10 h-10 p-2 text-(--muted) transition hover:bg-(--background) hover:text-(--foreground) disabled:opacity-40"
+                        className="flex size-10 items-center justify-center rounded-full p-2 text-(--muted) transition hover:bg-(--background) hover:text-(--foreground) disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Pencil size={20} />
                       </button>
@@ -697,13 +728,18 @@ export default function CategoriesManager({
                         type="button"
                         onClick={() => handleDelete(category)}
                         disabled={
+                          !canManage ||
                           deletingId === category.id ||
                           changingStatusId !== null ||
                           editingId !== null
                         }
-                        title="Excluir categoria"
+                        title={
+                          !canManage
+                            ? "Você não tem permissão para excluir categorias"
+                            : "Excluir categoria"
+                        }
                         aria-label={`Excluir ${category.name}`}
-                        className="rounded-full w-10 h-10 p-2 text-(--muted) transition hover:bg-red-500/10 hover:text-red-500 disabled:opacity-40"
+                        className="flex size-10 items-center justify-center rounded-full p-2 text-(--muted) transition hover:bg-red-500/10 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Trash2 size={20} />
                       </button>
@@ -717,13 +753,13 @@ export default function CategoriesManager({
                   </div>
                 )}
 
-                {/*  -------------------- Controles alternativos de ordenação  -------------------- */}
+                {/* Controles alternativos de ordenação */}
                 {orderingMode && (
                   <div className="flex items-center justify-end gap-2">
                     <button
                       type="button"
                       onClick={() => moveCategory(index, index - 1)}
-                      disabled={index === 0 || savingOrder}
+                      disabled={!canManage || index === 0 || savingOrder}
                       aria-label={`Mover ${category.name} para cima`}
                       title="Mover para cima"
                       className="rounded-lg border border-(--border) p-2 text-(--muted) transition hover:bg-(--surface) disabled:cursor-not-allowed disabled:opacity-30"
@@ -734,7 +770,11 @@ export default function CategoriesManager({
                     <button
                       type="button"
                       onClick={() => moveCategory(index, index + 1)}
-                      disabled={index === categories.length - 1 || savingOrder}
+                      disabled={
+                        !canManage ||
+                        index === categories.length - 1 ||
+                        savingOrder
+                      }
                       aria-label={`Mover ${category.name} para baixo`}
                       title="Mover para baixo"
                       className="rounded-lg border border-(--border) p-2 text-(--muted) transition hover:bg-(--surface) disabled:cursor-not-allowed disabled:opacity-30"

@@ -49,6 +49,8 @@ type ProductFormProps = {
   onSubmit: (data: ProductFormData) => void;
   isSubmitting?: boolean;
   existingImages?: ExistingProductImage[];
+  permissions: string[];
+  isMaster: boolean;
 };
 
 type ProductImage = {
@@ -83,9 +85,35 @@ export default function ProductForm({
   onSubmit,
   isSubmitting = false,
   existingImages: initialImages = [],
+  permissions,
+  isMaster,
 }: ProductFormProps) {
+  const isEditing = Boolean(initialData);
+
+  const can = (permission: string) =>
+    isMaster || permissions.includes(permission);
+
+  const canEditFields = isEditing
+    ? can("products.edit")
+    : can("products.create");
+
+  const canEditPrice = isEditing
+    ? can("products.price")
+    : can("products.create");
+
+  const canEditAvailability = isEditing
+    ? can("products.availability")
+    : can("products.create");
+
+  const canManageImages = can("products.images");
+
+  const canSubmit = isEditing
+    ? canEditFields || canEditPrice || canEditAvailability || canManageImages
+    : can("products.create");
+
   const [name, setName] = useState(initialData?.name ?? "");
   const [slug, setSlug] = useState(initialData?.slug ?? "");
+
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(
     Boolean(initialData?.slug),
   );
@@ -106,22 +134,19 @@ export default function ProductForm({
     { label: string; value: string }[]
   >(initialData?.specifications ?? []);
 
-  // Imagens que já existem no produto.
   const [existingImages, setExistingImages] =
     useState<ExistingProductImage[]>(initialImages);
 
-  // IDs das imagens existentes que o usuário decidiu remover.
   const [removedImageIds, setRemovedImageIds] = useState<string[]>([]);
 
-  // Imagens novas selecionadas pelo usuário.
   const [images, setImages] = useState<ProductImage[]>([]);
 
   const [imageError, setImageError] = useState("");
 
   const imageInputRef = useRef<HTMLInputElement>(null);
+
   const previewUrls = useRef(new Set<string>());
 
-  // Libera as URLs temporárias quando o componente é desmontado.
   useEffect(() => {
     return () => {
       previewUrls.current.forEach((url) => {
@@ -133,6 +158,8 @@ export default function ProductForm({
   }, []);
 
   function handleNameChange(value: string) {
+    if (!canEditFields) return;
+
     setName(value);
 
     if (!slugManuallyEdited) {
@@ -141,11 +168,15 @@ export default function ProductForm({
   }
 
   function handleSlugChange(value: string) {
+    if (!canEditFields) return;
+
     setSlug(value);
     setSlugManuallyEdited(true);
   }
 
   function addSpecification() {
+    if (!canEditFields) return;
+
     setSpecifications((current) => [...current, { label: "", value: "" }]);
   }
 
@@ -154,6 +185,8 @@ export default function ProductForm({
     field: "label" | "value",
     value: string,
   ) {
+    if (!canEditFields) return;
+
     setSpecifications((current) =>
       current.map((item, i) =>
         i === index ? { ...item, [field]: value } : item,
@@ -162,11 +195,17 @@ export default function ProductForm({
   }
 
   function removeSpecification(index: number) {
+    if (!canEditFields) return;
+
     setSpecifications((current) => current.filter((_, i) => i !== index));
   }
 
-  // Seleção e validação das imagens.
   function handleImageSelection(event: ChangeEvent<HTMLInputElement>) {
+    if (!canManageImages) {
+      event.target.value = "";
+      return;
+    }
+
     const selectedFiles = Array.from(event.target.files ?? []);
 
     setImageError("");
@@ -190,6 +229,7 @@ export default function ProductForm({
         errors.push(
           `Você pode adicionar no máximo ${MAX_IMAGES} imagens por produto.`,
         );
+
         break;
       }
 
@@ -197,11 +237,13 @@ export default function ProductForm({
         errors.push(
           `O arquivo "${file.name}" possui um formato não permitido.`,
         );
+
         continue;
       }
 
-      if (file.size > MAX_IMAGE_SIZE) {
-        errors.push(`O arquivo "${file.name}" ultrapassa o limite de 5 MB.`);
+      if (file.size === 0 || file.size > MAX_IMAGE_SIZE) {
+        errors.push(`O arquivo "${file.name}" está vazio ou ultrapassa 5 MB.`);
+
         continue;
       }
 
@@ -223,12 +265,12 @@ export default function ProductForm({
       setImageError(errors.join(" "));
     }
 
-    // Permite selecionar novamente o mesmo arquivo.
     event.target.value = "";
   }
 
-  // Remove uma imagem nova e libera sua URL temporária.
   function removeImage(index: number) {
+    if (!canManageImages) return;
+
     setImages((current) => {
       const imageToRemove = current[index];
 
@@ -243,9 +285,9 @@ export default function ProductForm({
     setImageError("");
   }
 
-  // Remove uma imagem existente da tela e registra seu ID.
-  // A exclusão real será feita posteriormente pela API.
   function removeExistingImage(imageId: string) {
+    if (!canManageImages) return;
+
     setExistingImages((current) =>
       current.filter((image) => image.id !== imageId),
     );
@@ -259,6 +301,8 @@ export default function ProductForm({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (isSubmitting || !canSubmit) return;
 
     onSubmit({
       name: name.trim(),
@@ -277,7 +321,10 @@ export default function ProductForm({
   }
 
   const inputClass =
-    "h-11 w-full rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none transition focus:border-(--primary)";
+    "h-11 w-full rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none transition focus:border-(--primary) disabled:cursor-not-allowed disabled:opacity-50";
+
+  const textareaClass =
+    "w-full resize-y rounded-lg border border-(--border) bg-(--background) p-3 text-sm text-(--foreground) outline-none transition placeholder:text-(--muted) focus:border-(--primary) disabled:cursor-not-allowed disabled:opacity-50";
 
   const labelClass = "mb-1.5 block text-sm font-medium text-(--foreground)";
 
@@ -288,6 +335,7 @@ export default function ProductForm({
   return (
     <form onSubmit={handleSubmit} className="mx-auto mb-8 max-w-7xl space-y-6">
       {/* Cabeçalho */}
+
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <Link
@@ -299,7 +347,7 @@ export default function ProductForm({
           </Link>
 
           <h1 className="text-2xl font-semibold text-(--foreground)">
-            {initialData ? "Editar produto" : "Novo produto"}
+            {isEditing ? "Editar produto" : "Novo produto"}
           </h1>
 
           <p className="mt-1 text-sm text-(--muted)">
@@ -309,6 +357,7 @@ export default function ProductForm({
       </div>
 
       {/* Informações básicas */}
+
       <section className="rounded-xl border border-(--border) bg-(--surface) p-4 sm:p-6">
         <div className="mb-5">
           <h2 className="font-semibold text-(--foreground)">
@@ -333,6 +382,7 @@ export default function ProductForm({
               placeholder="Ex.: Capa Silicone iPhone 17 Pro"
               maxLength={120}
               required
+              disabled={!canEditFields}
               className={inputClass}
             />
           </div>
@@ -349,6 +399,7 @@ export default function ProductForm({
               placeholder="capa-silicone-iphone-17-pro"
               maxLength={150}
               required
+              disabled={!canEditFields}
               className={inputClass}
             />
 
@@ -368,6 +419,7 @@ export default function ProductForm({
                 value={categoryId}
                 onChange={(event) => setCategoryId(event.target.value)}
                 required
+                disabled={!canEditFields}
                 className={inputClass}
               >
                 <option value="">Selecione uma categoria</option>
@@ -389,6 +441,7 @@ export default function ProductForm({
                 id="product-brand"
                 value={brandId}
                 onChange={(event) => setBrandId(event.target.value)}
+                disabled={!canEditFields}
                 className={inputClass}
               >
                 <option value="">Sem marca</option>
@@ -405,6 +458,7 @@ export default function ProductForm({
       </section>
 
       {/* Preço e disponibilidade */}
+
       <section className="rounded-xl border border-(--border) bg-(--surface) p-4 sm:p-6">
         <div className="mb-5">
           <h2 className="font-semibold text-(--foreground)">
@@ -430,6 +484,7 @@ export default function ProductForm({
               value={price}
               onChange={(event) => setPrice(event.target.value)}
               placeholder="0,00"
+              disabled={!canEditPrice}
               className={inputClass}
             />
 
@@ -445,8 +500,9 @@ export default function ProductForm({
               type="button"
               role="switch"
               aria-checked={available}
+              disabled={!canEditAvailability}
               onClick={() => setAvailable((current) => !current)}
-              className="flex h-11 w-full items-center justify-between rounded-lg border border-(--border) bg-(--background) px-3"
+              className="flex h-11 w-full items-center justify-between rounded-lg border border-(--border) bg-(--background) px-3 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="text-sm text-(--foreground)">
                 {available ? "Produto disponível" : "Produto indisponível"}
@@ -469,6 +525,7 @@ export default function ProductForm({
       </section>
 
       {/* Descrição */}
+
       <section className="rounded-xl border border-(--border) bg-(--surface) p-4 sm:p-6">
         <div className="mb-5">
           <h2 className="font-semibold text-(--foreground)">Descrição</h2>
@@ -484,7 +541,8 @@ export default function ProductForm({
           placeholder="Descreva o produto..."
           rows={5}
           maxLength={2000}
-          className="w-full resize-y rounded-lg border border-(--border) bg-(--background) p-3 text-sm text-(--foreground) outline-none transition placeholder:text-(--muted) focus:border-(--primary)"
+          disabled={!canEditFields}
+          className={textareaClass}
         />
 
         <p className="mt-1.5 text-right text-xs text-(--muted)">
@@ -493,6 +551,7 @@ export default function ProductForm({
       </section>
 
       {/* Especificações */}
+
       <section className="rounded-xl border border-(--border) bg-(--surface) p-4 sm:p-6">
         <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -508,7 +567,8 @@ export default function ProductForm({
           <button
             type="button"
             onClick={addSpecification}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-(--border) px-3 text-sm font-medium text-(--foreground) transition hover:border-(--primary) hover:text-(--primary)"
+            disabled={!canEditFields}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-(--border) px-3 text-sm font-medium text-(--foreground) transition hover:border-(--primary) hover:text-(--primary) disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus size={16} />
             Adicionar especificação
@@ -535,6 +595,7 @@ export default function ProductForm({
                   }
                   placeholder="Ex.: Material"
                   aria-label="Nome da especificação"
+                  disabled={!canEditFields}
                   className={inputClass}
                 />
 
@@ -545,14 +606,17 @@ export default function ProductForm({
                   }
                   placeholder="Ex.: Silicone"
                   aria-label="Valor da especificação"
+                  disabled={!canEditFields}
                   className={inputClass}
                 />
+
                 <div className="flex items-center justify-end">
                   <button
                     type="button"
                     onClick={() => removeSpecification(index)}
                     aria-label="Remover especificação"
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-(--muted) transition hover:bg-red-500/10 hover:text-red-500"
+                    disabled={!canEditFields}
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-(--muted) transition hover:bg-red-500/10 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Trash2 size={20} color="red" />
                   </button>
@@ -564,6 +628,7 @@ export default function ProductForm({
       </section>
 
       {/* Imagens do produto */}
+
       <section className="rounded-xl border border-(--border) bg-(--surface) p-4 sm:p-6">
         <div className="mb-5 flex items-center justify-between gap-3">
           <div>
@@ -587,11 +652,13 @@ export default function ProductForm({
           accept="image/jpeg,image/png,image/webp,image/avif"
           multiple
           onChange={handleImageSelection}
+          disabled={!canManageImages}
           className="hidden"
         />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
-          {/* Imagens que já existem no produto */}
+          {/* Imagens existentes */}
+
           {existingImages.map((image, index) => (
             <div key={image.id} className="group relative">
               <div className="relative aspect-square overflow-hidden rounded-lg border border-(--border) bg-(--background)">
@@ -607,7 +674,8 @@ export default function ProductForm({
                   type="button"
                   onClick={() => removeExistingImage(image.id)}
                   aria-label={`Remover foto ${index + 1}`}
-                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-500"
+                  disabled={!canManageImages}
+                  className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   <X size={16} />
                 </button>
@@ -627,7 +695,8 @@ export default function ProductForm({
             </div>
           ))}
 
-          {/* Imagens novas selecionadas */}
+          {/* Imagens novas */}
+
           {images.map((image, index) => {
             const imageNumber = existingImages.length + index + 1;
 
@@ -647,7 +716,8 @@ export default function ProductForm({
                     type="button"
                     onClick={() => removeImage(index)}
                     aria-label={`Remover foto ${imageNumber}`}
-                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-500"
+                    disabled={!canManageImages}
+                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <X size={16} />
                   </button>
@@ -668,12 +738,14 @@ export default function ProductForm({
             );
           })}
 
-          {/* Botão para adicionar imagens */}
+          {/* Botão adicionar imagens */}
+
           {totalImages < MAX_IMAGES && (
             <button
               type="button"
               onClick={() => imageInputRef.current?.click()}
-              className="flex aspect-square flex-col items-center justify-center gap-2 mb-4 rounded-lg border border-dashed border-(--border) bg-(--background) text-(--muted) transition hover:border-(--primary) hover:text-(--primary)"
+              disabled={!canManageImages}
+              className="mb-4 flex aspect-square flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-(--border) bg-(--background) text-(--muted) transition hover:border-(--primary) hover:text-(--primary) disabled:cursor-not-allowed disabled:opacity-40"
             >
               <Plus size={28} />
 
@@ -695,6 +767,7 @@ export default function ProductForm({
       </section>
 
       {/* Ações */}
+
       <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Link
           href="/admin/products"
@@ -705,7 +778,7 @@ export default function ProductForm({
 
         <button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || !canSubmit}
           className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-(--primary) px-6 text-sm font-semibold text-black transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? "Salvando..." : "Salvar produto"}

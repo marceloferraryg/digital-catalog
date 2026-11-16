@@ -17,16 +17,22 @@ type EditProductClientProps = {
   product: AdminProduct;
   categories: SelectOption[];
   brands: SelectOption[];
+  permissions: string[];
+  isMaster: boolean;
 };
 
 export default function EditProductClient({
   product,
   categories,
   brands,
+  permissions,
+  isMaster,
 }: EditProductClientProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(data: ProductFormData) {
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
 
     try {
@@ -119,6 +125,8 @@ export default function EditProductClient({
     <ProductForm
       categories={categories}
       brands={brands}
+      permissions={permissions}
+      isMaster={isMaster}
       existingImages={product.images}
       initialData={{
         name: product.name,
