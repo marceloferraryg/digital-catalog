@@ -12,13 +12,16 @@ import ProductFilters, {
 type ProductsCatalogProps = {
   products: Product[];
   initialCategory?: string;
+  categories: {
+    id: string;
+    name: string;
+    slug: string;
+  }[];
 };
 
 type ProductsViewFormat = "grid" | "list";
 
 const PRODUCTS_PER_PAGE = 20;
-
-const VALID_CATEGORIES = ["", "celulares", "acessorios", "eletronicos"];
 
 const INITIAL_FILTERS: ProductFiltersState = {
   category: "",
@@ -29,9 +32,7 @@ const INITIAL_FILTERS: ProductFiltersState = {
 };
 
 function normalizeCategory(category: string | null | undefined) {
-  const normalized = category?.toLowerCase() ?? "";
-
-  return VALID_CATEGORIES.includes(normalized) ? normalized : "";
+  return category?.trim().toLowerCase() ?? "";
 }
 
 function parsePrice(value: string): number | null {
@@ -44,6 +45,7 @@ function parsePrice(value: string): number | null {
 
 export default function ProductsCatalog({
   products,
+  categories,
   initialCategory = "",
 }: ProductsCatalogProps) {
   const router = useRouter();
@@ -263,6 +265,7 @@ export default function ProductsCatalog({
         }}
         onChange={handleFilterChange}
         onClear={clearFilters}
+        categories={categories}
       />
 
       <div id="products-results" className="min-w-0 scroll-mt-6">

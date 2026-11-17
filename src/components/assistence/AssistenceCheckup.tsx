@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+
 import {
   BatteryCharging,
   Check,
@@ -16,10 +17,14 @@ import {
   Droplets,
   ListChecks,
 } from "lucide-react";
+
 import { FaWhatsapp } from "react-icons/fa6";
 
-import { siteConfig } from "@/config/site";
 import { ASSISTANCE_SERVICES, PHONE_BRANDS } from "@/data/assistence";
+
+type AssistenceCheckupProps = {
+  whatsappButton: string;
+};
 
 const SERVICE_ICONS = [
   Smartphone,
@@ -36,29 +41,41 @@ const SERVICE_ICONS = [
 
 const OTHER = "Outra opção";
 
-export default function AssistenceCheckup() {
+export default function AssistenceCheckup({
+  whatsappButton,
+}: AssistenceCheckupProps) {
   const [brand, setBrand] = useState("");
   const [customBrand, setCustomBrand] = useState("");
+
   const [family, setFamily] = useState("");
   const [customFamily, setCustomFamily] = useState("");
+
   const [model, setModel] = useState("");
   const [customModel, setCustomModel] = useState("");
+
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [customService, setCustomService] = useState("");
+
   const [problem, setProblem] = useState("");
 
   const selectedBrandData = PHONE_BRANDS.find((item) => item.name === brand);
+
   const selectedBrand = brand === OTHER ? customBrand.trim() : brand;
   const selectedFamily = family === OTHER ? customFamily.trim() : family;
   const selectedModel = model === OTHER ? customModel.trim() : model;
+
   const availableFamilies = selectedBrandData?.families ?? [];
+
   const selectedFamilyData = availableFamilies.find(
     (item) => item.name === family,
   );
+
   const availableModels = selectedFamilyData?.models ?? [];
+
   const selectedServiceNames = ASSISTANCE_SERVICES.filter((service) =>
     selectedServices.includes(service.id),
   ).map((service) => service.name);
+
   const serviceNames = [
     ...selectedServiceNames,
     ...(selectedServices.includes(OTHER) && customService.trim()
@@ -112,7 +129,8 @@ export default function AssistenceCheckup() {
       "Poderiam me orientar sobre o orçamento e como funciona o atendimento?",
     ].join("\n");
 
-    const phone = String(siteConfig.whatsappButton).replace(/\D/g, "");
+    const phone = String(whatsappButton).replace(/\D/g, "");
+
     if (!phone) {
       alert("O número de WhatsApp da loja não está configurado.");
       return;
@@ -127,6 +145,7 @@ export default function AssistenceCheckup() {
 
   const fieldClass =
     "min-h-12 w-full rounded-xl border border-(--border) bg-(--background) px-4 text-sm text-(--foreground) outline-none placeholder:text-(--muted) focus:border-(--primary)";
+
   const optionClass = (active: boolean) =>
     `flex min-h-12 items-center justify-center gap-2 rounded-xl border px-3 py-3 text-sm font-medium transition-colors ${
       active
@@ -147,9 +166,11 @@ export default function AssistenceCheckup() {
         >
           Vamos cuidar do seu celular?
         </h1>
+
         <h2 className="mb-2 text-lg font-bold text-(--foreground) md:text-2xl">
           Me conte qual o problema com seu aparelho
         </h2>
+
         <p className="text-sm text-(--muted) md:text-base">
           Informe os dados do seu celular, escolha os serviços necessários e
           solicite seu orçamento diretamente pelo WhatsApp.
@@ -162,8 +183,9 @@ export default function AssistenceCheckup() {
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-(--primary)/10 text-(--primary)">
               <Smartphone size={23} />
             </div>
+
             <div>
-              <h3 className="font-semibold text-lg text-(--foreground)">
+              <h3 className="text-lg font-semibold text-(--foreground)">
                 Dados do aparelho
               </h3>
               <p className="text-sm text-(--muted)">
@@ -177,7 +199,8 @@ export default function AssistenceCheckup() {
               <legend className="mb-3 text-md font-semibold text-(--primary)">
                 1. Qual é a marca do celular? *
               </legend>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 mb-4">
+
+              <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {PHONE_BRANDS.map((item) => (
                   <button
                     key={item.name}
@@ -190,15 +213,18 @@ export default function AssistenceCheckup() {
                     {item.name}
                   </button>
                 ))}
+
                 <button
                   type="button"
                   aria-pressed={brand === OTHER}
                   onClick={() => chooseBrand(OTHER)}
                   className={optionClass(brand === OTHER)}
                 >
-                  {brand === OTHER && <Check size={16} />}Outra marca
+                  {brand === OTHER && <Check size={16} />}
+                  Outra marca
                 </button>
               </div>
+
               {brand === OTHER && (
                 <input
                   value={customBrand}
@@ -216,7 +242,8 @@ export default function AssistenceCheckup() {
                 <legend className="mb-3 text-md font-semibold text-(--primary)">
                   2. Qual é a família do aparelho? *
                 </legend>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 mb-4">
+
+                <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {availableFamilies.map((item) => (
                     <button
                       key={item.name}
@@ -229,15 +256,18 @@ export default function AssistenceCheckup() {
                       {item.name}
                     </button>
                   ))}
+
                   <button
                     type="button"
                     aria-pressed={family === OTHER}
                     onClick={() => chooseFamily(OTHER)}
                     className={optionClass(family === OTHER)}
                   >
-                    {family === OTHER && <Check size={16} />}Não achei a família
+                    {family === OTHER && <Check size={16} />}
+                    Não achei a família
                   </button>
                 </div>
+
                 {family === OTHER && (
                   <input
                     value={customFamily}
@@ -260,10 +290,11 @@ export default function AssistenceCheckup() {
                 <legend className="mb-3 text-md font-semibold text-(--primary)">
                   {brand === OTHER ? "2" : "3"}. Qual é o modelo do celular? *
                 </legend>
+
                 {brand !== OTHER &&
                   family !== OTHER &&
                   availableModels.length > 0 && (
-                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 mb-4">
+                    <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
                       {availableModels.map((item) => (
                         <button
                           key={item}
@@ -279,6 +310,7 @@ export default function AssistenceCheckup() {
                           {item}
                         </button>
                       ))}
+
                       <button
                         type="button"
                         aria-pressed={model === OTHER}
@@ -288,11 +320,12 @@ export default function AssistenceCheckup() {
                         }}
                         className={optionClass(model === OTHER)}
                       >
-                        {model === OTHER && <Check size={16} />}Não achei o
-                        modelo
+                        {model === OTHER && <Check size={16} />}
+                        Não achei o modelo
                       </button>
                     </div>
                   )}
+
                 {(brand === OTHER ||
                   family === OTHER ||
                   availableModels.length === 0) && (
@@ -300,6 +333,7 @@ export default function AssistenceCheckup() {
                     Digite o modelo do aparelho abaixo.
                   </p>
                 )}
+
                 {(model === OTHER ||
                   brand === OTHER ||
                   family === OTHER ||
@@ -321,47 +355,70 @@ export default function AssistenceCheckup() {
                 <legend className="mb-1 text-md font-semibold text-(--primary)">
                   {brand === OTHER ? "3" : "4"}. Qual serviço você precisa? *
                 </legend>
+
                 <p className="mb-3 text-xs text-(--muted)">
                   Você pode selecionar mais de uma opção.
                 </p>
-                <div className="space-y-3 mb-4">
+
+                <div className="mb-4 space-y-3">
                   {ASSISTANCE_SERVICES.map((service, index) => {
                     const Icon = SERVICE_ICONS[index] ?? Wrench;
                     const isSelected = selectedServices.includes(service.id);
+
                     return (
                       <button
                         key={service.id}
                         type="button"
                         aria-pressed={isSelected}
                         onClick={() => toggleService(service.id)}
-                        className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors ${isSelected ? "border-(--primary) bg-(--primary)/5" : "border-(--border) hover:border-(--primary)"}`}
+                        className={`flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors ${
+                          isSelected
+                            ? "border-(--primary) bg-(--primary)/5"
+                            : "border-(--border) hover:border-(--primary)"
+                        }`}
                       >
                         <span
-                          className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${isSelected ? "bg-(--primary)/15 text-(--primary)" : "bg-(--background) text-(--muted)"}`}
+                          className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                            isSelected
+                              ? "bg-(--primary)/15 text-(--primary)"
+                              : "bg-(--background) text-(--muted)"
+                          }`}
                         >
                           <Icon size={21} />
                         </span>
+
                         <span className="min-w-0 flex-1">
                           <span className="block text-sm font-semibold text-(--foreground)">
                             {service.name}
                           </span>
+
                           <span className="mt-1 block text-xs leading-5 text-(--muted)">
                             {service.description}
                           </span>
                         </span>
+
                         <span
-                          className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${isSelected ? "border-(--primary) bg-(--primary) text-black" : "border-(--border)"}`}
+                          className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border ${
+                            isSelected
+                              ? "border-(--primary) bg-(--primary) text-black"
+                              : "border-(--border)"
+                          }`}
                         >
                           {isSelected && <Check size={14} />}
                         </span>
                       </button>
                     );
                   })}
+
                   <button
                     type="button"
                     aria-pressed={selectedServices.includes(OTHER)}
                     onClick={() => toggleService(OTHER)}
-                    className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left text-sm font-medium transition-colors ${selectedServices.includes(OTHER) ? "border-(--primary) bg-(--primary)/5 text-(--primary)" : "border-(--border) text-(--foreground) hover:border-(--primary)"}`}
+                    className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left text-sm font-medium transition-colors ${
+                      selectedServices.includes(OTHER)
+                        ? "border-(--primary) bg-(--primary)/5 text-(--primary)"
+                        : "border-(--border) text-(--foreground) hover:border-(--primary)"
+                    }`}
                   >
                     <ListChecks size={20} />
                     Outro serviço / não achei minha opção
@@ -369,6 +426,7 @@ export default function AssistenceCheckup() {
                       <Check size={16} className="ml-auto" />
                     )}
                   </button>
+
                   {selectedServices.includes(OTHER) && (
                     <input
                       value={customService}
@@ -391,6 +449,7 @@ export default function AssistenceCheckup() {
                 Observações{" "}
                 <span className="font-normal text-(--muted)">(opcional)</span>
               </label>
+
               <textarea
                 id="problem-description"
                 value={problem}
@@ -400,6 +459,7 @@ export default function AssistenceCheckup() {
                 maxLength={1000}
                 className="w-full resize-y rounded-xl border border-(--border) bg-(--background) px-4 py-3 text-sm text-(--foreground) outline-none placeholder:text-(--muted) focus:border-(--primary)"
               />
+
               <p className="mt-1 text-right text-xs text-(--muted)">
                 {problem.length}/1000
               </p>
@@ -415,6 +475,7 @@ export default function AssistenceCheckup() {
             <FaWhatsapp size={23} />
             Solicitar orçamento pelo WhatsApp
           </button>
+
           {!canSubmit && (
             <p className="text-center text-xs text-(--muted)">
               Informe a marca, família (quando aplicável), modelo e pelo menos
@@ -429,10 +490,12 @@ export default function AssistenceCheckup() {
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-(--primary)/10 text-(--primary)">
                 <CircleHelp size={22} />
               </div>
-              <h3 className="font-semibold text-lg text-(--primary)">
+
+              <h3 className="text-lg font-semibold text-(--primary)">
                 Resumo da solicitação
               </h3>
             </div>
+
             <div className="mt-5 space-y-4 text-sm">
               <div>
                 <p className="text-xs text-(--muted)">Marca</p>
@@ -440,6 +503,7 @@ export default function AssistenceCheckup() {
                   {selectedBrand || "Não selecionada"}
                 </p>
               </div>
+
               {selectedFamily && (
                 <div>
                   <p className="text-xs text-(--muted)">Família</p>
@@ -448,14 +512,17 @@ export default function AssistenceCheckup() {
                   </p>
                 </div>
               )}
+
               <div>
                 <p className="text-xs text-(--muted)">Modelo</p>
                 <p className="mt-1 font-medium text-(--foreground)">
                   {selectedModel || "Não informado"}
                 </p>
               </div>
+
               <div>
                 <p className="text-xs text-(--muted)">Serviços selecionados</p>
+
                 {serviceNames.length > 0 ? (
                   <ul className="mt-2 space-y-2">
                     {serviceNames.map((name) => (
@@ -477,6 +544,7 @@ export default function AssistenceCheckup() {
                   </p>
                 )}
               </div>
+
               {problem.trim() && (
                 <div>
                   <p className="text-xs text-(--muted)">Observações</p>
@@ -486,16 +554,19 @@ export default function AssistenceCheckup() {
                 </div>
               )}
             </div>
+
             <div className="mt-5 rounded-xl bg-(--background) p-4">
               <p className="text-sm font-semibold text-(--foreground)">
                 Orçamento sob consulta
               </p>
+
               <p className="mt-1 text-xs leading-5 text-(--muted)">
                 Nossa equipe avaliará sua solicitação e orientará você pelo
                 WhatsApp.
               </p>
             </div>
           </div>
+
           <div className="rounded-2xl border border-(--border) p-5">
             <div className="flex items-center gap-2 text-(--primary)">
               <MessageCircle size={20} />
@@ -503,6 +574,7 @@ export default function AssistenceCheckup() {
                 Atendimento direto
               </h3>
             </div>
+
             <p className="mt-2 text-sm leading-6 text-(--muted)">
               A solicitação será preparada no WhatsApp da S.A Smart. Você poderá
               revisar a mensagem e confirmar o envio pelo aplicativo.

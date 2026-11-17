@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -22,78 +23,120 @@ import {
 } from "react-icons/fa6";
 
 import { siteConfig } from "@/config/site";
+import { getSiteSettings } from "@/lib/supabase/site-settings";
 
 const STORE_IMAGE = "";
-// Exemplo futuro: "/images/contact/store.jpg"
 
-const STORE = {
-  phone: siteConfig.whatsapp,
-  address: siteConfig.address.street,
-  city: siteConfig.address.city,
-  zipCode: siteConfig.address.zipCode,
-  hours: [siteConfig.hours.mondayToFriday, siteConfig.hours.saturday],
-};
+// Componente responsável por buscar as configurações e montar a página.
+async function ContactContent() {
+  const settings = await getSiteSettings();
 
-const SOCIALS = [
-  {
-    label: "Instagram",
-    href: siteConfig.socials.instagram,
-    icon: FaInstagram,
-  },
-  { label: "Facebook", href: siteConfig.socials.facebook, icon: FaFacebook },
-  { label: "TikTok", href: siteConfig.socials.tiktok, icon: FaTiktok },
-  { label: "YouTube", href: siteConfig.socials.youtube, icon: FaYoutube },
-];
+  if (!settings) {
+    throw new Error("Configurações da loja não encontradas.");
+  }
 
-function getWhatsAppUrl() {
-  const phone = String(siteConfig.whatsappButton ?? "").replace(/\D/g, "");
+  // Dados comerciais do Supabase
+  const address = settings.address || {};
+  const hours = settings.hours || {};
+  const socials = settings.socials || {};
 
-  if (!phone) return "#";
+  const storeName = settings.name;
 
-  const message = "Olá! Vim pelo site da S.A Smart e gostaria de atendimento.";
+  const whatsappButton = String(
+    settings.whatsapp_button || siteConfig.whatsappButton || "",
+  ).replace(/\D/g, "");
 
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-}
+  const phone = settings.phone || "";
 
-const BENEFITS = [
-  {
-    icon: Zap,
-    title: "Atendimento rápido",
-    description: "Tiramos suas dúvidas o mais breve possível.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Compra segura",
-    description: "Atendimento direto com nossa equipe.",
-  },
-  {
-    icon: Store,
-    title: "Loja física",
-    description: `Atendimento presencial em ${STORE.city}.`,
-  },
-  {
-    icon: Headset,
-    title: "Suporte especializado",
-    description: "Nossa equipe está pronta para ajudar.",
-  },
-];
+  // WhatsApp
+  const whatsappMessage = `Olá! Vim pelo site da ${storeName} e gostaria de atendimento.`;
 
-export default function ContactPage() {
-  const whatsappUrl = getWhatsAppUrl();
+  const whatsappUrl = whatsappButton
+    ? `https://wa.me/${whatsappButton}?text=${encodeURIComponent(whatsappMessage)}`
+    : "";
 
-  const addressQuery = [STORE.address, STORE.city, STORE.zipCode, "Brasil"]
+  // Endereço
+  const addressLines = [
+    address.street,
+    address.neighborhood,
+    address.city,
+    address.state,
+    address.zipCode,
+    "Brasil",
+  ].filter(Boolean);
+
+  const addressQuery = addressLines.join(", ");
+
+  const fallbackAddress = [storeName, address.city, address.state, "Brasil"]
     .filter(Boolean)
     .join(", ");
 
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-    addressQuery ||
-      `${siteConfig.name}, ${siteConfig.address.city}, ${siteConfig.address.state}, Brasil`,
-  )}`;
+  const mapsQuery = addressQuery || fallbackAddress;
+
+  const mapsUrl =
+    address.mapsUrl ||
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      mapsQuery,
+    )}`;
 
   const mapsEmbedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(
-    addressQuery ||
-      `${siteConfig.name}, ${siteConfig.address.city}, ${siteConfig.address.state}, Brasil`,
+    mapsQuery,
   )}&output=embed`;
+
+  // Horários
+  const storeHours = [
+    hours.mondayToFriday,
+    hours.saturday,
+    hours.sunday,
+  ].filter(Boolean);
+
+  // Redes sociais
+  const SOCIALS = [
+    {
+      label: "Instagram",
+      href: socials.instagram,
+      icon: FaInstagram,
+    },
+    {
+      label: "Facebook",
+      href: socials.facebook,
+      icon: FaFacebook,
+    },
+    {
+      label: "TikTok",
+      href: socials.tiktok,
+      icon: FaTiktok,
+    },
+    {
+      label: "YouTube",
+      href: socials.youtube,
+      icon: FaYoutube,
+    },
+  ].filter((social) => social.href);
+
+  // Diferenciais
+  const BENEFITS = [
+    {
+      icon: Zap,
+      title: "Atendimento rápido",
+      description: "Tiramos suas dúvidas o mais breve possível.",
+    },
+    {
+      icon: ShieldCheck,
+      title: "Compra segura",
+      description: "Atendimento direto com nossa equipe.",
+    },
+    {
+      icon: Store,
+      title: "Loja física",
+      description: `Atendimento presencial em ${address.city || "nossa cidade"}.`,
+    },
+    {
+      icon: Headset,
+      title: "Suporte especializado",
+      description: "Nossa equipe está pronta para ajudar.",
+    },
+  ];
 
   return (
     <main className="pb-12">
@@ -105,7 +148,7 @@ export default function ContactPage() {
           <div className="absolute inset-0 -z-10">
             <Image
               src={STORE_IMAGE}
-              alt="Interior da loja S.A Smart"
+              alt={`Interior da loja ${storeName}`}
               fill
               priority
               sizes="100vw"
@@ -125,12 +168,12 @@ export default function ContactPage() {
             <h1 className="text-4xl font-bold leading-tight text-(--foreground) sm:text-5xl lg:text-6xl">
               Fale com a
               <br />
-              <span className="text-(--primary)">S.A Smart</span>
+              <span className="text-(--primary)">{storeName}</span>
             </h1>
 
             <p className="mt-5 max-w-xl text-base leading-7 text-(--muted) sm:text-lg">
               Estamos prontos para atender! Entre em contato pelo WhatsApp,
-              telefone ou visite nossa loja em {siteConfig.address.city}.
+              telefone ou visite nossa loja em {address.city || "nossa cidade"}.
             </p>
           </div>
         </div>
@@ -151,99 +194,107 @@ export default function ContactPage() {
 
             <div className="mt-7 grid gap-4 sm:grid-cols-2">
               {/* WHATSAPP */}
-              <div className="flex flex-col rounded-xl border border-(--primary) bg-(--background) p-5">
-                <div className="flex items-center gap-3">
-                  <FaWhatsapp size={34} className="shrink-0 text-(--primary)" />
+              {whatsappUrl && (
+                <div className="flex flex-col rounded-xl border border-(--primary) bg-(--background) p-5">
+                  <div className="flex items-center gap-3">
+                    <FaWhatsapp
+                      size={34}
+                      className="shrink-0 text-(--primary)"
+                    />
 
-                  <h3 className="text-lg font-bold text-(--foreground)">
-                    WhatsApp
-                  </h3>
-                </div>
-
-                <p className="mt-4 text-sm leading-6 text-(--muted)">
-                  Atendimento rápido e direto com nossa equipe.
-                </p>
-
-                <div className="mt-auto pt-5">
-                  <Link
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg 
-                                  bg-(--whatsapp) px-4 py-3 transition-opacity hover:opacity-90"
-                  >
-                    <span className="text-black font-bold text-sm">
-                      Conversar agora
-                    </span>
-                    <ArrowRight size={18} color="black" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* TELEFONE */}
-              <div className="flex flex-col rounded-xl border border-(--border) bg-(--background) p-5">
-                <div className="flex items-center gap-3">
-                  <Phone size={32} className="shrink-0 text-(--primary)" />
-
-                  <h3 className="text-lg font-bold text-(--foreground)">
-                    Telefone
-                  </h3>
-                </div>
-
-                <p className="mt-4 text-sm leading-6 text-(--muted)">
-                  Prefere ligar? Entre em contato com a loja.
-                </p>
-
-                <div className="mt-auto pt-5">
-                  <div className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-(--border) bg-(--surface) px-3 py-3 text-sm font-semibold text-(--foreground) transition-colors hover:border-(--primary)">
-                    {STORE.phone}
+                    <h3 className="text-lg font-bold text-(--foreground)">
+                      WhatsApp
+                    </h3>
                   </div>
-                </div>
-              </div>
 
-              {/* REDES SOCIAIS */}
-              <div className="flex flex-col rounded-xl border border-(--border) bg-(--background) p-5">
-                <div className="flex items-center gap-3">
-                  <Share2 size={32} className="shrink-0 text-(--primary)" />
+                  <p className="mt-4 text-sm leading-6 text-(--muted)">
+                    Atendimento rápido e direto com nossa equipe.
+                  </p>
 
-                  <h3 className="text-lg font-bold text-(--foreground)">
-                    Redes Sociais
-                  </h3>
-                </div>
-
-                <p className="mt-4 text-sm leading-6 text-(--muted)">
-                  Siga-nos nas redes sociais!
-                </p>
-
-                <div className="flex gap-6 justify-center items-center p-6">
-                  {SOCIALS.map((social) => (
+                  <div className="mt-auto pt-5">
                     <Link
-                      key={social.label}
-                      href={social.href}
+                      href={whatsappUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      aria-label={social.label}
-                      className="group hover:text-(--primary) transition-colors w-10 h-10
-                                justify-center items-center flex"
+                      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-(--whatsapp) px-4 py-3 transition-opacity hover:opacity-90"
                     >
-                      <social.icon
-                        size={32}
-                        className="text-(--foreground) group-hover:text-(--primary) transition-colors"
-                      />
+                      <span className="text-sm font-bold text-black">
+                        Conversar agora
+                      </span>
+
+                      <ArrowRight size={18} color="black" />
                     </Link>
-                  ))}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* TELEFONE */}
+              {phone && (
+                <div className="flex flex-col rounded-xl border border-(--border) bg-(--background) p-5">
+                  <div className="flex items-center gap-3">
+                    <Phone size={32} className="shrink-0 text-(--primary)" />
+
+                    <h3 className="text-lg font-bold text-(--foreground)">
+                      Telefone
+                    </h3>
+                  </div>
+
+                  <p className="mt-4 text-sm leading-6 text-(--muted)">
+                    Prefere ligar? Entre em contato com a loja.
+                  </p>
+
+                  <div className="mt-auto pt-5">
+                    <a
+                      href={`tel:${phone.replace(/\D/g, "")}`}
+                      className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-(--border) bg-(--surface) px-3 py-3 text-sm font-semibold text-(--foreground) transition-colors hover:border-(--primary)"
+                    >
+                      {phone}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {/* REDES SOCIAIS */}
+              {SOCIALS.length > 0 && (
+                <div className="flex flex-col rounded-xl border border-(--border) bg-(--background) p-5">
+                  <div className="flex items-center gap-3">
+                    <Share2 size={32} className="shrink-0 text-(--primary)" />
+
+                    <h3 className="text-lg font-bold text-(--foreground)">
+                      Redes Sociais
+                    </h3>
+                  </div>
+
+                  <p className="mt-4 text-sm leading-6 text-(--muted)">
+                    Siga-nos nas redes sociais!
+                  </p>
+
+                  <div className="flex flex-wrap items-center justify-center gap-6 p-6">
+                    {SOCIALS.map((social) => (
+                      <Link
+                        key={social.label}
+                        href={social.href!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={social.label}
+                        className="group flex size-10 items-center justify-center transition-colors hover:text-(--primary)"
+                      >
+                        <social.icon
+                          size={32}
+                          className="text-(--foreground) transition-colors group-hover:text-(--primary)"
+                        />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
           {/* LOJA E MAPA */}
           <div className="rounded-2xl border border-(--border) bg-(--surface) p-5 sm:p-7">
             <div className="flex items-center gap-3">
-              <div
-                className="flex size-11 shrink-0 items-center justify-center rounded-xl 
-                              text-(--primary)"
-              >
+              <div className="flex size-11 shrink-0 items-center justify-center text-(--primary)">
                 <Store size={32} />
               </div>
 
@@ -253,7 +304,7 @@ export default function ContactPage() {
                 </h2>
 
                 <p className="mt-1 text-sm text-(--muted)">
-                  Venha nos visitar em Faxinal.
+                  Venha nos visitar em {address.city || "nossa cidade"}.
                 </p>
               </div>
             </div>
@@ -262,65 +313,77 @@ export default function ContactPage() {
               <MapPin size={24} className="mt-0.5 shrink-0 text-(--primary)" />
 
               <div className="min-w-0 text-md leading-6 text-(--muted)">
-                {STORE.address && (
+                {address.street && (
                   <p className="font-semibold text-(--foreground)">
-                    {STORE.address}
+                    {address.street}
                   </p>
                 )}
 
-                <p className="text-sm">{STORE.city}</p>
-
-                {STORE.zipCode && (
-                  <p className="text-sm">CEP {STORE.zipCode}</p>
+                {address.neighborhood && (
+                  <p className="text-sm">{address.neighborhood}</p>
                 )}
 
-                {!STORE.address && (
+                <p className="text-sm">
+                  {[address.city, address.state].filter(Boolean).join(" - ")}
+                </p>
+
+                {address.zipCode && (
+                  <p className="text-sm">CEP {address.zipCode}</p>
+                )}
+
+                {!address.street && !address.city && (
                   <p className="text-xs">Endereço completo a configurar.</p>
                 )}
               </div>
             </div>
 
-            <a
-              href={mapsUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Abrir localização da loja no Google Maps"
-              className="group relative mt-4 block h-52 overflow-hidden rounded-xl border border-(--border) bg-(--background) sm:h-60"
-            >
-              <iframe
-                src={mapsEmbedUrl}
-                title="Mapa de localização da S.A Smart em Faxinal"
-                className="pointer-events-none h-full w-full border-0"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
+            {/* MAPA */}
+            {mapsQuery && (
+              <div className="mt-4">
+                <div className="group relative h-52 overflow-hidden rounded-xl border border-(--border) bg-(--background) sm:h-60">
+                  <iframe
+                    src={mapsEmbedUrl}
+                    title={`Mapa de localização da ${storeName}`}
+                    className="h-full w-full border-0"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </div>
 
-              <span
-                className="absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 
-                              bg-black/75 px-4 py-3 text-sm font-semibold text-white opacity-100 
-                                transition-opacity sm:opacity-0 sm:group-hover:opacity-100"
-              >
-                <MapPin size={17} className="text-(--primary)" />
-                Abrir no Google Maps
-                <ArrowRight size={16} />
-              </span>
-            </a>
-
-            <div className="mt-5 flex items-start gap-3">
-              <Clock3 size={24} className="mt-0.5 shrink-0 text-(--primary)" />
-
-              <div>
-                <h3 className="font-semibold text-(--foreground)">
-                  Horário de atendimento
-                </h3>
-
-                <ul className="mt-2 space-y-1 text-sm text-(--muted)">
-                  {STORE.hours.map((hour) => (
-                    <li key={hour}>{hour}</li>
-                  ))}
-                </ul>
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-(--primary) hover:underline"
+                >
+                  <MapPin size={17} />
+                  Abrir no Google Maps
+                  <ArrowRight size={16} />
+                </a>
               </div>
-            </div>
+            )}
+
+            {/* HORÁRIOS */}
+            {storeHours.length > 0 && (
+              <div className="mt-5 flex items-start gap-3">
+                <Clock3
+                  size={24}
+                  className="mt-0.5 shrink-0 text-(--primary)"
+                />
+
+                <div>
+                  <h3 className="font-semibold text-(--foreground)">
+                    Horário de atendimento
+                  </h3>
+
+                  <ul className="mt-2 space-y-1 text-sm text-(--muted)">
+                    {storeHours.map((hour) => (
+                      <li key={hour}>{hour}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -338,7 +401,7 @@ export default function ContactPage() {
                 </div>
 
                 <div>
-                  <h3 className="text-sm font-bold text-(--foreground) mb-2">
+                  <h3 className="mb-2 text-sm font-bold text-(--foreground)">
                     {benefit.title}
                   </h3>
 
@@ -353,36 +416,51 @@ export default function ContactPage() {
       </section>
 
       {/* CTA FINAL */}
-      <section className="mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div
-          className="flex flex-col  gap-5 rounded-2xl border border-(--border) bg-(--surface) p-6 
-                          sm:flex-row sm:items-center sm:p-8 sm:gap-12"
-        >
-          <div>
-            <h2 className="text-xl font-bold text-(--foreground) sm:text-2xl">
-              Podemos ajudar você?
-            </h2>
+      {whatsappUrl && (
+        <section className="mx-auto mt-10 max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-5 rounded-2xl border border-(--border) bg-(--surface) p-6 sm:flex-row sm:items-center sm:gap-12 sm:p-8">
+            <div>
+              <h2 className="text-xl font-bold text-(--foreground) sm:text-2xl">
+                Podemos ajudar você?
+              </h2>
 
-            <p className="mt-2 text-sm text-(--muted)">
-              Fale com nossa equipe e tire suas dúvidas.
-            </p>
+              <p className="mt-2 text-sm text-(--muted)">
+                Fale com nossa equipe e tire suas dúvidas.
+              </p>
+            </div>
+
+            <Link
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-(--whatsapp) px-4 py-3 transition-opacity hover:opacity-90"
+            >
+              <FaWhatsapp size={34} className="shrink-0 text-black" />
+
+              <span className="text-sm font-bold text-black">
+                Conversar agora
+              </span>
+
+              <ArrowRight size={18} color="black" />
+            </Link>
           </div>
-
-          <Link
-            href={whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg 
-                                  bg-(--whatsapp) px-4 py-3 transition-opacity hover:opacity-90"
-          >
-            <FaWhatsapp size={34} className="shrink-0 text-black" />
-            <span className="text-black font-bold text-sm">
-              Conversar agora
-            </span>
-            <ArrowRight size={18} color="black" />
-          </Link>
-        </div>
-      </section>
+        </section>
+      )}
     </main>
+  );
+}
+
+// Componente de página: permite o streaming do conteúdo dinâmico.
+export default function ContactPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto min-h-96 max-w-7xl px-4 py-20 text-center">
+          <p className="text-(--muted)">Carregando informações...</p>
+        </main>
+      }
+    >
+      <ContactContent />
+    </Suspense>
   );
 }

@@ -2,11 +2,11 @@ import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { connection } from "next/server";
 
 import ProductsCatalog from "@/components/products/ProductsCatalog";
 import { getProducts } from "@/lib/supabase/products";
-
-import { connection } from "next/server";
+import { getActiveCategories } from "@/lib/supabase/categories";
 
 type ProductsPageProps = {
   searchParams: Promise<{
@@ -14,31 +14,27 @@ type ProductsPageProps = {
   }>;
 };
 
-const CATEGORY_LABELS: Record<string, string> = {
-  celulares: "Celulares",
-  acessorios: "Acessórios",
-  eletronicos: "Eletrônicos",
-};
-
 async function ProductsContent({ searchParams }: ProductsPageProps) {
   await connection();
 
-  const { category } = await searchParams;
-  const products = await getProducts();
+  const [{ category }, products, categories] = await Promise.all([
+    searchParams,
+    getProducts(),
+    getActiveCategories(),
+  ]);
 
-  const normalizedCategory = category?.toLowerCase() ?? "";
+  const normalizedCategory = category?.trim().toLowerCase() ?? "";
 
-  const validCategory = Object.hasOwn(CATEGORY_LABELS, normalizedCategory)
-    ? normalizedCategory
-    : "";
+  const selectedCategory = categories.find(
+    (item) => item.slug.toLowerCase() === normalizedCategory,
+  );
 
-  const title = CATEGORY_LABELS[validCategory] ?? "Nossos produtos";
+  const validCategory = selectedCategory?.slug ?? "";
+  const title = selectedCategory?.name ?? "Nossos produtos";
 
   const description = validCategory
-    ? `Confira nossos ${title.toLowerCase()}.`
-    : "Confira nossos celulares, acessórios e eletrônicos.";
-
-  // Mantenha aqui o restante do código atual...
+    ? `Confira nossos produtos da categoria ${title.toLowerCase()}.`
+    : "Confira nosso catálogo de produtos.";
 
   return (
     <section className="container mx-auto w-full px-4 pb-8">
@@ -105,7 +101,11 @@ async function ProductsContent({ searchParams }: ProductsPageProps) {
         )}
       </nav>
 
-      <ProductsCatalog products={products} initialCategory={validCategory} />
+      <ProductsCatalog
+        products={products}
+        categories={categories}
+        initialCategory={validCategory}
+      />
     </section>
   );
 }

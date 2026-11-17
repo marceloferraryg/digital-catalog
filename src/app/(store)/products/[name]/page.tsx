@@ -9,6 +9,7 @@ import ProductCard from "@/components/products/ProductCard";
 import ProductImageGallery from "@/components/products/ProductImageGallery";
 import { siteConfig } from "@/config/site";
 import { getProducts } from "@/lib/supabase/products";
+import { getSiteSettings } from "@/lib/supabase/site-settings";
 
 type ProductDetailsPageProps = {
   params: Promise<{ name: string }>;
@@ -23,10 +24,12 @@ function formatPrice(price: number | null) {
   });
 }
 
-function createWhatsAppUrl(message: string) {
-  const phone = String(siteConfig.whatsappButton).replace(/\D/g, "");
+function createWhatsAppUrl(phone: string, message: string) {
+  const number = String(phone).replace(/\D/g, "");
 
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  if (!number) return "#";
+
+  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
 async function getProduct(name: string) {
@@ -39,23 +42,29 @@ export async function generateMetadata({
   params,
 }: ProductDetailsPageProps): Promise<Metadata> {
   const { name } = await params;
-  const product = await getProduct(name);
+
+  const [product, settings] = await Promise.all([
+    getProduct(name),
+    getSiteSettings(),
+  ]);
+
+  const storeName = settings?.name || siteConfig.name;
 
   if (!product) {
     return {
-      title: "Produto não encontrado | S.A Smart",
+      title: `Produto não encontrado | ${storeName}`,
     };
   }
 
   const description =
     product.description ||
-    `Confira ${product.name} no catálogo da S.A Smart. Consulte preço e disponibilidade diretamente com nossa equipe.`;
+    `Confira ${product.name} no catálogo da ${storeName}. Consulte preço e disponibilidade diretamente com nossa equipe.`;
 
   return {
-    title: `${product.name} | S.A Smart`,
+    title: `${product.name} | ${storeName}`,
     description,
     openGraph: {
-      title: `${product.name} | S.A Smart`,
+      title: `${product.name} | ${storeName}`,
       description,
       images: product.image ? [{ url: product.image }] : [],
     },
@@ -84,10 +93,18 @@ export default function ProductDetailsPage({
 
 async function ProductDetailsContent({ params }: ProductDetailsPageProps) {
   const { name } = await params;
-  const products = await getProducts();
+
+  const [products, settings] = await Promise.all([
+    getProducts(),
+    getSiteSettings(),
+  ]);
+
   const product = products.find((item) => item.slug === name);
 
   if (!product) notFound();
+
+  const storeName = settings?.name || siteConfig.name;
+  const whatsappButton = settings?.whatsapp_button || siteConfig.whatsappButton;
 
   const formattedPrice = formatPrice(product.price);
 
@@ -95,7 +112,7 @@ async function ProductDetailsContent({ params }: ProductDetailsPageProps) {
     ? `Olá! Tenho interesse no produto: ${product.name}. Poderia me passar mais informações?`
     : `Olá! Gostaria de consultar a disponibilidade do produto: ${product.name}.`;
 
-  const whatsappUrl = createWhatsAppUrl(whatsappMessage);
+  const whatsappUrl = createWhatsAppUrl(whatsappButton, whatsappMessage);
 
   const images = Array.from(
     new Set([product.image, ...(product.gallery ?? [])].filter(Boolean)),
@@ -199,7 +216,7 @@ async function ProductDetailsContent({ params }: ProductDetailsPageProps) {
 
             <div>
               <p className="font-semibold text-(--foreground)">
-                Atendimento direto na S.A Smart
+                Atendimento direto na {storeName}
               </p>
 
               <p className="mt-1 text-sm text-(--muted)">
@@ -226,7 +243,7 @@ async function ProductDetailsContent({ params }: ProductDetailsPageProps) {
 
           <p className="whitespace-pre-line text-sm leading-7 text-(--muted)">
             {product.description ||
-              "Entre em contato com a S.A Smart para saber mais sobre este produto."}
+              `Entre em contato com a ${storeName} para saber mais sobre este produto.`}
           </p>
         </div>
 

@@ -14,22 +14,17 @@ export type ProductFiltersState = {
 type ProductFiltersProps = {
   filters: ProductFiltersState;
   brands: string[];
+  categories: { id: string; name: string; slug: string }[];
   searchTerm: string;
   onSearchChange: (value: string) => void;
   onChange: (filters: ProductFiltersState) => void;
   onClear: () => void;
 };
 
-const CATEGORIES = [
-  { value: "", label: "Todas as categorias" },
-  { value: "celulares", label: "Celulares" },
-  { value: "acessorios", label: "Acessórios" },
-  { value: "eletronicos", label: "Eletrônicos" },
-];
-
 export default function ProductFilters({
   filters,
   brands,
+  categories,
   searchTerm,
   onSearchChange,
   onChange,
@@ -107,9 +102,11 @@ export default function ProductFilters({
             onChange={(event) => updateFilter("category", event.target.value)}
             className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
           >
-            {CATEGORIES.map((category) => (
-              <option key={category.value} value={category.value}>
-                {category.label}
+            <option value="">Todas as categorias</option>
+
+            {categories.map((category) => (
+              <option key={category.id} value={category.slug}>
+                {category.name}
               </option>
             ))}
           </select>

@@ -1,14 +1,21 @@
 import Image from "next/image";
 import Link from "next/link";
-import { siteConfig } from "@/config/site";
+
 import { FaWhatsapp } from "react-icons/fa6";
 import { ArrowRight } from "lucide-react";
 
-export default function HeroHome() {
+type HeroHomeProps = {
+  whatsappButton: string;
+};
+
+export default function HeroHome({ whatsappButton }: HeroHomeProps) {
+  const whatsappNumber = whatsappButton.replace(/\D/g, "");
+
+  const whatsappUrl = whatsappNumber ? `https://wa.me/${whatsappNumber}` : "";
+
   return (
     <section className="relative w-full overflow-hidden">
-      {/*------------------ Imagem desktop --------------------*/}
-
+      {/* Imagem desktop */}
       <div className="relative hidden w-full md:block">
         <Image
           src="/images/home/hero/hero-desktop.png"
@@ -21,8 +28,7 @@ export default function HeroHome() {
         />
       </div>
 
-      {/*--------------------- Imagem mobile ------------------*/}
-
+      {/* Imagem mobile */}
       <div className="relative w-full md:hidden">
         <Image
           src="/images/home/hero/hero-mobile.png"
@@ -35,8 +41,7 @@ export default function HeroHome() {
         />
       </div>
 
-      {/*---------------------- Conteúdo ----------------------*/}
-
+      {/* Conteúdo */}
       <div className="absolute inset-0 z-10 px-4 pt-[83%] lg:px-8 lg:pt-8 md:px-4 md:pt-4">
         <p className="flex items-center gap-2 text-md text-(--muted) lg:gap-4 lg:text-lg lg:mb-4 md:gap-2 md:text-lg md:mb-2">
           Smartphones
@@ -63,27 +68,28 @@ export default function HeroHome() {
           <br />e assistência técnica especializada.
         </p>
 
-        {/*---------------------- WHATSAPP ----------------------*/}
+        {/* WhatsApp */}
+        {whatsappUrl && (
+          <div className="mt-4 flex lg:mt-8">
+            <Link
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Chamar no WhatsApp"
+              className="group flex items-center justify-center gap-2 rounded-lg bg-(--whatsapp) px-8 py-4"
+            >
+              <FaWhatsapp size={36} color="black" />
 
-        <div className="mt-4 flex lg:mt-8">
-          <Link
-            href={`https://wa.me/${siteConfig.whatsappButton}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            aria-label="Chamar no WhatsApp"
-            className="group flex items-center justify-center gap-2 rounded-lg bg-(--whatsapp) px-8 py-4"
-          >
-            <FaWhatsapp size={36} color="black" />
-
-            <span className="flex items-center gap-2 text-lg font-bold text-black">
-              Chamar agora
-              <ArrowRight
-                size={32}
-                className="transition-transform group-hover:translate-x-2"
-              />
-            </span>
-          </Link>
-        </div>
+              <span className="flex items-center gap-2 text-lg font-bold text-black">
+                Chamar agora
+                <ArrowRight
+                  size={32}
+                  className="transition-transform group-hover:translate-x-2"
+                />
+              </span>
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
