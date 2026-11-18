@@ -321,10 +321,10 @@ export default function ProductForm({
   }
 
   const inputClass =
-    "h-11 w-full rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none transition focus:border-(--primary) disabled:cursor-not-allowed disabled:opacity-50";
+    "h-11 w-full rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none transition disabled:cursor-not-allowed disabled:opacity-50";
 
   const textareaClass =
-    "w-full resize-y rounded-lg border border-(--border) bg-(--background) p-3 text-sm text-(--foreground) outline-none transition placeholder:text-(--muted) focus:border-(--primary) disabled:cursor-not-allowed disabled:opacity-50";
+    "w-full resize-y rounded-lg border border-(--border) bg-(--background) p-3 text-sm text-(--foreground) outline-none transition placeholder:text-(--muted) disabled:cursor-not-allowed disabled:opacity-50";
 
   const labelClass = "mb-1.5 block text-sm font-medium text-(--foreground)";
 
@@ -340,7 +340,8 @@ export default function ProductForm({
         <div>
           <Link
             href="/admin/products"
-            className="mb-3 inline-flex items-center gap-2 text-sm text-(--muted) transition hover:text-(--primary)"
+            className="mb-3 inline-flex items-center gap-2 text-sm text-(--muted) transition 
+                        hover:text-(--primary)"
           >
             <ArrowLeft size={16} />
             Voltar para produtos

@@ -457,7 +457,9 @@ export default function AssistenceCheckup({
                 placeholder="Conte um pouco mais sobre o problema..."
                 rows={4}
                 maxLength={1000}
-                className="w-full resize-y rounded-xl border border-(--border) bg-(--background) px-4 py-3 text-sm text-(--foreground) outline-none placeholder:text-(--muted) focus:border-(--primary)"
+                className="w-full resize-y rounded-xl border border-(--border) bg-(--background) 
+                            px-4 py-3 text-sm text-(--foreground) outline-none placeholder:text-(--muted) 
+                            "
               />
 
               <p className="mt-1 text-right text-xs text-(--muted)">
@@ -470,7 +472,10 @@ export default function AssistenceCheckup({
             type="button"
             onClick={handleSubmit}
             disabled={!canSubmit}
-            className="mt-7 mb-3 flex min-h-13 w-full items-center justify-center gap-3 rounded-xl bg-(--primary) px-5 py-4 font-bold text-black transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+            className="mt-7 mb-3 flex min-h-13 w-full items-center justify-center gap-3 
+                        rounded-xl bg-(--primary) px-5 py-4 font-bold text-black 
+                        transition-opacity hover:opacity-90 disabled:cursor-not-allowed 
+                        disabled:opacity-40"
           >
             <FaWhatsapp size={23} />
             Solicitar orçamento pelo WhatsApp

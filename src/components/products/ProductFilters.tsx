@@ -77,7 +77,9 @@ export default function ProductFilters({
           value={searchTerm}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder="Buscar produto..."
-          className="w-full rounded-xl border border-(--border) bg-(--surface) py-3 pl-10 pr-3 text-sm text-(--foreground) outline-none transition placeholder:text-(--muted) focus:border-(--primary)"
+          className="w-full rounded-xl border border-(--border) bg-(--surface) py-3 pl-10 pr-3 
+                      text-sm text-(--foreground) outline-none transition 
+                      placeholder:text-(--muted)"
         />
       </div>
     );
@@ -100,7 +102,8 @@ export default function ProductFilters({
             id={fieldId("category")}
             value={filters.category}
             onChange={(event) => updateFilter("category", event.target.value)}
-            className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+            className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
+                        text-sm text-(--foreground) outline-none"
           >
             <option value="">Todas as categorias</option>
 
@@ -124,7 +127,8 @@ export default function ProductFilters({
             id={fieldId("brand")}
             value={filters.brand}
             onChange={(event) => updateFilter("brand", event.target.value)}
-            className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+            className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
+                       text-sm text-(--foreground) outline-none"
           >
             <option value="">Todas as marcas</option>
 
@@ -160,7 +164,8 @@ export default function ProductFilters({
                 onChange={(event) =>
                   updateFilter("minPrice", event.target.value)
                 }
-                className="w-full min-w-0 rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                className="w-full min-w-0 rounded-lg border border-(--border) bg-(--background) 
+                            px-3 py-2.5 text-sm text-(--foreground) outline-none"
               />
             </div>
 
@@ -182,7 +187,8 @@ export default function ProductFilters({
                 onChange={(event) =>
                   updateFilter("maxPrice", event.target.value)
                 }
-                className="w-full min-w-0 rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                className="w-full min-w-0 rounded-lg border border-(--border) bg-(--background) 
+                            px-3 py-2.5 text-sm text-(--foreground) outline-none"
               />
             </div>
           </div>
@@ -205,7 +211,8 @@ export default function ProductFilters({
                 event.target.value as ProductFiltersState["sort"],
               )
             }
-            className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+            className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
+                        text-sm text-(--foreground) outline-none"
           >
             <option value="default">Padrão</option>
             <option value="price-asc">Menor preço</option>
@@ -216,7 +223,8 @@ export default function ProductFilters({
         <button
           type="button"
           onClick={onClear}
-          className="w-full rounded-lg border border-(--border) px-4 py-2.5 text-sm font-medium text-(--foreground) transition hover:border-(--primary)"
+          className="w-full rounded-lg border border-(--border) px-4 py-2.5 text-sm font-medium 
+                      text-(--foreground) transition"
         >
           Limpar filtros
         </button>

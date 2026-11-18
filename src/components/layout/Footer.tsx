@@ -306,8 +306,7 @@ export default function FooterStore({ settings }: FooterStoreProps) {
 
       <div className="flex items-center gap-2 text-center mt-4 bg-(--surface) py-3 px-4 justify-center w-full">
         <p className="text-sm text-(--foreground)">
-          © {new Date().getFullYear()} - {settings.name} - Todos os direitos
-          reservados.
+          © 2027 - {settings.name} - Todos os direitos reservados.
         </p>
       </div>
     </footer>

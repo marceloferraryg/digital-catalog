@@ -125,7 +125,7 @@ export default function AdminLoginPage() {
                   disabled={loading}
                   className="h-12 w-full rounded-lg border border-(--border) bg-(--background) 
                                 pl-11 pr-4 text-sm text-(--foreground) outline-none transition 
-                                placeholder:text-(--muted) focus:border-(--primary) 
+                                placeholder:text-(--muted) 
                                 focus:ring-2 focus:ring-(--primary)/20 disabled:opacity-60"
                 />
               </div>
@@ -155,7 +155,7 @@ export default function AdminLoginPage() {
                   disabled={loading}
                   className="h-12 w-full rounded-lg border border-(--border) bg-(--background) 
                                 pl-11 pr-12 text-sm text-(--foreground) outline-none transition 
-                                placeholder:text-(--muted) focus:border-(--primary) 
+                                placeholder:text-(--muted) 
                                 focus:ring-2 focus:ring-(--primary)/20 disabled:opacity-60"
                 />
 

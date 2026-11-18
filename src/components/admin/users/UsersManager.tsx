@@ -55,6 +55,7 @@ export default function UsersManager({
 
   const [users, setUsers] = useState(initialUsers);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const [name, setName] = useState("");
   const [username, setUsername] = useState("");
@@ -170,6 +171,52 @@ export default function UsersManager({
     }
   }
 
+  async function handleDelete(user: AdminUser) {
+    if (user.role === "master") return;
+
+    const confirmed = window.confirm(
+      `Tem certeza que deseja excluir o administrador "${user.name}"?\n\nEssa ação não poderá ser desfeita.`,
+    );
+
+    if (!confirmed) return;
+
+    setError("");
+    setSuccess("");
+    setDeletingUserId(user.id);
+
+    try {
+      const response = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: user.id }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Não foi possível excluir o usuário.");
+      }
+
+      if (editingUserId === user.id) {
+        resetForm();
+      }
+
+      await refreshUsers();
+
+      setSuccess("Administrador excluído com sucesso!");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Ocorreu um erro ao excluir o administrador.",
+      );
+    } finally {
+      setDeletingUserId(null);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <div>
@@ -182,7 +229,10 @@ export default function UsersManager({
       {/* Cadastro e edição */}
       <section className="rounded-xl border border-(--border) bg-(--surface) p-6">
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex size-10 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)">
+          <div
+            className="flex size-10 items-center justify-center rounded-lg bg-(--primary)/10 
+                          text-(--primary)"
+          >
             {isEditing ? <Pencil size={20} /> : <UserPlus size={20} />}
           </div>
 
@@ -215,7 +265,8 @@ export default function UsersManager({
                 maxLength={100}
                 required
                 placeholder="Nome do administrador"
-                className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
+                            text-sm text-(--foreground) outline-none"
               />
             </div>
 
@@ -238,7 +289,8 @@ export default function UsersManager({
                 required
                 placeholder="ex: joao.silva"
                 autoComplete="off"
-                className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
+                            text-sm text-(--foreground) outline-none"
               />
               <p className="mt-1 text-xs text-(--muted)">
                 Use letras minúsculas, números, ponto, hífen ou underline.
@@ -261,7 +313,8 @@ export default function UsersManager({
                 required
                 placeholder="usuario@email.com"
                 autoComplete="off"
-                className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
+                            text-sm text-(--foreground) outline-none"
               />
             </div>
 
@@ -286,7 +339,8 @@ export default function UsersManager({
                     : "Mínimo de 6 caracteres"
                 }
                 autoComplete="new-password"
-                className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+                className="w-full rounded-lg border border-(--border) bg-(--background) px-3 py-2.5 
+                            text-sm text-(--foreground) outline-none"
               />
               {isEditing && (
                 <p className="mt-1 text-xs text-(--muted)">
@@ -365,13 +419,19 @@ export default function UsersManager({
           </div>
 
           {error && (
-            <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-500">
+            <p
+              className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm
+                           text-red-500"
+            >
               {error}
             </p>
           )}
 
           {success && (
-            <p className="rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm text-green-600">
+            <p
+              className="rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm
+                           text-green-600"
+            >
               {success}
             </p>
           )}
@@ -382,7 +442,9 @@ export default function UsersManager({
                 type="button"
                 onClick={resetForm}
                 disabled={loading}
-                className="flex items-center gap-2 rounded-lg border border-(--border) px-5 py-2.5 text-sm font-semibold text-(--foreground) transition-colors hover:bg-(--background) disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg border border-(--border) px-5 py-2.5 
+                            text-sm font-semibold text-(--foreground) transition-colors 
+                            hover:bg-(--background) disabled:opacity-50"
               >
                 <X size={18} />
                 Cancelar edição
@@ -392,7 +454,9 @@ export default function UsersManager({
             <button
               type="submit"
               disabled={loading}
-              className="flex items-center gap-2 rounded-lg bg-(--primary) px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg bg-(--primary) px-5 py-2.5 text-sm 
+                          font-semibold text-black transition-opacity hover:opacity-90 
+                          disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isEditing ? <Save size={18} /> : <Plus size={18} />}
               {loading
@@ -409,8 +473,11 @@ export default function UsersManager({
       <section className="rounded-xl border border-(--border) bg-(--surface)">
         <div className="flex items-center justify-between border-b border-(--border) p-6">
           <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-(--primary)/10 text-(--primary)">
-              <Users size={20} />
+            <div
+              className="flex size-10 items-center justify-center rounded-lg bg-(--primary)/10 
+                              text-(--primary)"
+            >
+              <Users size={22} />
             </div>
 
             <div>
@@ -442,7 +509,10 @@ export default function UsersManager({
                       {user.name}
                     </h3>
 
-                    <span className="rounded-full bg-(--primary)/10 px-2.5 py-1 text-xs font-medium text-(--primary)">
+                    <span
+                      className="rounded-full bg-(--primary)/10 px-2.5 py-1 text-xs font-medium 
+                                      text-(--primary)"
+                    >
                       {user.role === "master" ? "Master" : "Administrador"}
                     </span>
 
@@ -466,7 +536,10 @@ export default function UsersManager({
 
                   <div className="flex flex-wrap gap-2 pt-2">
                     {user.role === "master" ? (
-                      <span className="flex items-center gap-1.5 rounded-md bg-(--primary)/10 px-2.5 py-1.5 text-xs text-(--primary)">
+                      <span
+                        className="flex items-center gap-1.5 rounded-md bg-(--primary)/10 
+                                        px-2.5 py-1.5 text-xs text-(--primary)"
+                      >
                         <ShieldCheck size={14} />
                         Acesso total
                       </span>
@@ -497,7 +570,9 @@ export default function UsersManager({
                       <button
                         type="button"
                         onClick={() => handleEdit(user)}
-                        className="flex items-center gap-2 rounded-lg border border-(--border) px-3 py-2 text-sm text-(--foreground) transition-colors hover:bg-(--background)"
+                        className="flex items-center gap-2 rounded-lg border border-(--border) 
+                                    px-3 py-2 text-sm text-(--foreground) transition-colors 
+                                    hover:bg-(--background)"
                       >
                         <Pencil size={16} />
                         Editar
@@ -505,12 +580,15 @@ export default function UsersManager({
 
                       <button
                         type="button"
-                        disabled
-                        title="Exclusão será implementada na próxima etapa"
-                        className="flex items-center gap-2 rounded-lg border border-(--border) px-3 py-2 text-sm text-red-500 opacity-50"
+                        onClick={() => handleDelete(user)}
+                        disabled={deletingUserId !== null}
+                        title="Excluir administrador"
+                        className="flex items-center gap-2 rounded-lg border border-(--border) px-3 py-2 text-sm text-red-500 transition-colors hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <Trash2 size={16} />
-                        Excluir
+                        {deletingUserId === user.id
+                          ? "Excluindo..."
+                          : "Excluir"}
                       </button>
                     </>
                   )}

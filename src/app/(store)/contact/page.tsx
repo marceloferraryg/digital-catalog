@@ -216,13 +216,17 @@ async function ContactContent() {
                       href={whatsappUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-(--whatsapp) px-4 py-3 transition-opacity hover:opacity-90"
+                      className="group inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-(--whatsapp) px-4 py-3 transition-opacity hover:opacity-90"
                     >
                       <span className="text-sm font-bold text-black">
                         Conversar agora
                       </span>
 
-                      <ArrowRight size={18} color="black" />
+                      <ArrowRight
+                        size={22}
+                        color="black"
+                        className="transition-transform group-hover:translate-x-1"
+                      />
                     </Link>
                   </div>
                 </div>
@@ -433,7 +437,7 @@ async function ContactContent() {
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-(--whatsapp) px-4 py-3 transition-opacity hover:opacity-90"
+              className="group inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-(--whatsapp) px-4 py-3 transition-opacity hover:opacity-90"
             >
               <FaWhatsapp size={34} className="shrink-0 text-black" />
 
@@ -441,7 +445,11 @@ async function ContactContent() {
                 Conversar agora
               </span>
 
-              <ArrowRight size={18} color="black" />
+              <ArrowRight
+                size={22}
+                color="black"
+                className="transition-transform group-hover:translate-x-1"
+              />
             </Link>
           </div>
         </section>

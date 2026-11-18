@@ -80,7 +80,8 @@ function AvailabilityBadge({ available }: { available: boolean }) {
 }
 
 function formatPrice(price: number | null) {
-  if (price === null) return "Sob consulta";
+  if (price === null)
+    return <span className="text-(--muted)">Sob consulta</span>;
 
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -301,7 +302,8 @@ export default function ProductsManager({
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Buscar por nome, marca ou categoria..."
-            className="h-11 w-full rounded-lg border border-(--border) bg-(--background) pl-10 pr-4 text-sm text-(--foreground) outline-none transition focus:border-(--primary)"
+            className="h-11 w-full rounded-lg border border-(--border) bg-(--background) pl-10 pr-4 
+                        text-sm text-(--foreground) outline-none transition"
           />
         </div>
 
@@ -309,7 +311,8 @@ export default function ProductsManager({
           <select
             value={categoryFilter}
             onChange={(event) => setCategoryFilter(event.target.value)}
-            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm 
+                        text-(--foreground) outline-none "
           >
             <option value="all">Todas as categorias</option>
 
@@ -323,7 +326,8 @@ export default function ProductsManager({
           <select
             value={brandFilter}
             onChange={(event) => setBrandFilter(event.target.value)}
-            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm 
+                          text-(--foreground) outline-none"
           >
             <option value="all">Todas as marcas</option>
 
@@ -339,7 +343,8 @@ export default function ProductsManager({
             onChange={(event) =>
               setAvailabilityFilter(event.target.value as AvailabilityFilter)
             }
-            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 text-sm text-(--foreground) outline-none focus:border-(--primary)"
+            className="h-10 rounded-lg border border-(--border) bg-(--background) px-3 
+                        text-sm text-(--foreground) outline-none"
           >
             <option value="all">Todas as disponibilidades</option>
             <option value="available">Disponíveis</option>

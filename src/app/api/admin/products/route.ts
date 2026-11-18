@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { getAdminUser } from "@/lib/supabase/auth";
 import { getAdminProducts } from "@/lib/supabase/products";
 import { createClient } from "@/lib/supabase/server";
+import { logAdminActivity } from "@/lib/supabase/activity-logs";
 
 export async function GET() {
   await connection();
@@ -227,6 +228,22 @@ export async function POST(request: Request) {
         { status: error.code === "23505" ? 409 : 500 },
       );
     }
+
+    // Registra a atividade administrativa
+    await logAdminActivity({
+      action: "created",
+      entityType: "product",
+      entityId: product.id,
+      description: `Cadastrou o produto ${product.name}`,
+      changes: {
+        name: product.name,
+        slug: product.slug,
+        price: product.price,
+        available: product.available,
+        category_id: product.category_id,
+        brand_id: product.brand_id,
+      },
+    });
 
     revalidatePath("/admin/products");
     revalidatePath("/products");

@@ -2,6 +2,17 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Não inicializa o Supabase Auth nas páginas públicas.
+  const publicRoutes = ["/", "/contact", "/assistence"];
+
+  if (publicRoutes.includes(pathname)) {
+    return NextResponse.next({
+      request,
+    });
+  }
+
   let response = NextResponse.next({
     request,
   });
@@ -31,7 +42,6 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  // Atualiza e valida a sessão com o Supabase Auth.
   await supabase.auth.getUser();
 
   return response;

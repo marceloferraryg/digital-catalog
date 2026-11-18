@@ -172,6 +172,23 @@ export default function HeaderStore({ settings }: HeaderStoreProps) {
                   </div>
                 )}
               </div>
+
+              <div className="flex items-center justify-center border-t border-(--border) p-4">
+                <Link
+                  href={"/admin"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Painel administrativo"
+                  className="group flex items-center justify-center"
+                >
+                  <span
+                    className="group text-xs text-(--foreground) group-hover:text-(--primary) 
+                                    transition-colors flex items-center gap-2 font-regular"
+                  >
+                    Admin
+                  </span>
+                </Link>
+              </div>
             </div>
           </div>
         )}
@@ -243,6 +260,23 @@ export default function HeaderStore({ settings }: HeaderStoreProps) {
                   size={20}
                   className="transition-transform group-hover:translate-x-1"
                 />
+              </span>
+            </Link>
+          </div>
+
+          <div className="flex items-center justify-center border-t border-(--border) p-4">
+            <Link
+              href={"/admin"}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Painel administrativo"
+              className="group flex items-center justify-center"
+            >
+              <span
+                className="group text-xs text-(--foreground) group-hover:text-(--primary) 
+                                    transition-colors flex items-center gap-2 font-regular"
+              >
+                Admin
               </span>
             </Link>
           </div>

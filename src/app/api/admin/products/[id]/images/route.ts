@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { getAdminUser } from "@/lib/supabase/auth";
+import { logAdminActivity } from "@/lib/supabase/activity-logs";
 
 const BUCKET = "product-images";
 const MAX_IMAGES = 5;
@@ -60,7 +61,7 @@ export async function POST(request: Request, { params }: RouteContext) {
 
     const { data: product, error: productError } = await supabase
       .from("products")
-      .select("id")
+      .select("id, name")
       .eq("id", productId)
       .maybeSingle();
 
@@ -167,6 +168,22 @@ export async function POST(request: Request, { params }: RouteContext) {
       throw insertError;
     }
 
+    await logAdminActivity({
+      action: "image_added",
+      entityType: "product",
+      entityId: productId,
+      description: `Adicionou ${savedImages.length} imagem(ns) ao produto ${product.name}`,
+      changes: {
+        added: savedImages.map((image) => ({
+          id: image.id,
+          storage_path: image.storage_path,
+          alt_text: image.alt_text,
+          is_primary: image.is_primary,
+        })),
+        total_added: savedImages.length,
+      },
+    });
+
     revalidatePath("/admin/products");
     revalidatePath("/products");
     revalidatePath("/products/[name]", "page");
@@ -232,7 +249,7 @@ export async function DELETE(request: Request, { params }: RouteContext) {
 
     const { data: product, error: productError } = await supabase
       .from("products")
-      .select("id")
+      .select("id, name")
       .eq("id", productId)
       .maybeSingle();
 
@@ -299,6 +316,21 @@ export async function DELETE(request: Request, { params }: RouteContext) {
     if (deleteError) {
       throw deleteError;
     }
+
+    await logAdminActivity({
+      action: "image_removed",
+      entityType: "product",
+      entityId: productId,
+      description: `Removeu ${imagesToDelete.length} imagem(ns) do produto ${product.name}`,
+      changes: {
+        removed: imagesToDelete.map((image) => ({
+          id: image.id,
+          storage_path: image.storage_path,
+          was_primary: image.is_primary,
+        })),
+        total_removed: imagesToDelete.length,
+      },
+    });
 
     const storagePaths = imagesToDelete.map((image) => image.storage_path);
 

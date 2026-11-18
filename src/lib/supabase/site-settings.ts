@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 
 export type SiteSettings = {
   id: string;
@@ -33,7 +34,7 @@ export type SiteSettings = {
 };
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
-  const supabase = await createClient();
+  const supabase = createPublicClient();
 
   const { data, error } = await supabase
     .from("site_settings")

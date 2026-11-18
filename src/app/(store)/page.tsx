@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { connection } from "next/server";
 
 import HeroHome from "@/components/home/Hero";
 import Categories from "@/components/home/Categories";
@@ -9,6 +10,8 @@ import { getActiveCategories } from "@/lib/supabase/categories";
 import { siteConfig } from "@/config/site";
 
 async function HomeContent() {
+  await connection();
+
   const [settings, categories] = await Promise.all([
     getSiteSettings(),
     getActiveCategories(),

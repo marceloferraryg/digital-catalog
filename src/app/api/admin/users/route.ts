@@ -533,3 +533,88 @@ export async function PATCH(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    const admin = await getAdminUser();
+
+    if (!admin) {
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+    }
+
+    if (admin.role !== "master") {
+      return NextResponse.json(
+        { error: "Somente administradores Master podem excluir usuários." },
+        { status: 403 },
+      );
+    }
+
+    const body = await request.json();
+    const id = body.id;
+
+    if (typeof id !== "string" || !id) {
+      return NextResponse.json({ error: "Usuário inválido." }, { status: 400 });
+    }
+
+    if (id === admin.id) {
+      return NextResponse.json(
+        { error: "Você não pode excluir sua própria conta." },
+        { status: 403 },
+      );
+    }
+
+    const supabase = createAdminClient();
+
+    const { data: targetUser, error: targetError } = await supabase
+      .from("users")
+      .select("id, role")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (targetError) {
+      console.error("Erro ao consultar usuário para exclusão:", targetError);
+
+      return NextResponse.json(
+        { error: "Não foi possível localizar o usuário." },
+        { status: 500 },
+      );
+    }
+
+    if (!targetUser) {
+      return NextResponse.json(
+        { error: "Usuário não encontrado." },
+        { status: 404 },
+      );
+    }
+
+    if (targetUser.role === "master") {
+      return NextResponse.json(
+        { error: "Contas Master não podem ser excluídas." },
+        { status: 403 },
+      );
+    }
+
+    const { error: deleteError } = await supabase.auth.admin.deleteUser(id);
+
+    if (deleteError) {
+      console.error("Erro ao excluir usuário do Auth:", deleteError);
+
+      return NextResponse.json(
+        { error: "Não foi possível excluir a conta do usuário." },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: "Usuário excluído com sucesso.",
+    });
+  } catch (error) {
+    console.error("Erro ao excluir administrador:", error);
+
+    return NextResponse.json(
+      { error: "Ocorreu um erro ao excluir o usuário." },
+      { status: 500 },
+    );
+  }
+}

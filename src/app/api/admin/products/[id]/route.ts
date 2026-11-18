@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { getAdminUser } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/server";
+import { logAdminActivity } from "@/lib/supabase/activity-logs";
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -255,6 +256,63 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       );
     }
 
+    // Registra as alterações realizadas no produto
+    const changes: Record<string, unknown> = {};
+
+    if (coreFieldsChanged) {
+      const fields = [
+        "name",
+        "slug",
+        "category_id",
+        "brand_id",
+        "description",
+        "specifications",
+      ] as const;
+
+      for (const field of fields) {
+        if (
+          JSON.stringify(existingProduct[field]) !==
+          JSON.stringify(product[field])
+        ) {
+          changes[field] = {
+            old: existingProduct[field],
+            new: product[field],
+          };
+        }
+      }
+    }
+
+    if (priceChanged) {
+      changes.price = {
+        old: existingProduct.price,
+        new: product.price,
+      };
+    }
+
+    if (availabilityChanged) {
+      changes.available = {
+        old: existingProduct.available,
+        new: product.available,
+      };
+    }
+
+    if (Object.keys(changes).length > 0) {
+      const action =
+        priceChanged && !coreFieldsChanged && !availabilityChanged
+          ? "price_changed"
+          : availabilityChanged && !coreFieldsChanged && !priceChanged
+            ? "availability_changed"
+            : "updated";
+
+      await logAdminActivity({
+        action,
+        entityType: "product",
+        entityId: product.id,
+        description: `Atualizou o produto ${product.name}`,
+        changes,
+      });
+    }
+
     revalidatePath("/admin/products");
     revalidatePath(`/admin/products/${id}`);
     revalidatePath("/products");
@@ -301,7 +359,15 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
 
     const { data: product, error: productError } = await supabase
       .from("products")
-      .select("id, slug")
+      .select(
+        ` id,
+          name,
+          slug,
+          price,
+          category_id,
+          brand_id
+        `,
+      )
       .eq("id", id)
       .maybeSingle();
 
@@ -353,6 +419,21 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
         { status: 500 },
       );
     }
+
+    await logAdminActivity({
+      action: "deleted",
+      entityType: "product",
+      entityId: product.id,
+      description: `Excluiu o produto ${product.name}`,
+      changes: {
+        name: product.name,
+        slug: product.slug,
+        price: product.price,
+        category_id: product.category_id,
+        brand_id: product.brand_id,
+        images_count: images?.length ?? 0,
+      },
+    });
 
     const storagePaths = (images ?? [])
       .map((image) => image.storage_path)
