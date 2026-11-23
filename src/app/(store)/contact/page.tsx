@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { connection } from "next/server";
 
 import {
   ArrowRight,
@@ -29,6 +30,7 @@ const STORE_IMAGE = "";
 
 // Componente responsável por buscar as configurações e montar a página.
 async function ContactContent() {
+  await connection(); // Garante que a conexão com o Supabase esteja ativa.
   const settings = await getSiteSettings();
 
   if (!settings) {

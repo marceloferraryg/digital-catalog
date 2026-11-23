@@ -10,6 +10,7 @@ import ProductImageGallery from "@/components/products/ProductImageGallery";
 import { siteConfig } from "@/config/site";
 import { getProducts } from "@/lib/supabase/products";
 import { getSiteSettings } from "@/lib/supabase/site-settings";
+import { connection } from "next/server";
 
 type ProductDetailsPageProps = {
   params: Promise<{ name: string }>;
@@ -41,6 +42,7 @@ async function getProduct(name: string) {
 export async function generateMetadata({
   params,
 }: ProductDetailsPageProps): Promise<Metadata> {
+  await connection();
   const { name } = await params;
 
   const [product, settings] = await Promise.all([
@@ -92,6 +94,7 @@ export default function ProductDetailsPage({
 }
 
 async function ProductDetailsContent({ params }: ProductDetailsPageProps) {
+  await connection();
   const { name } = await params;
 
   const [products, settings] = await Promise.all([

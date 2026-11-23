@@ -173,9 +173,11 @@ export default function HeaderStore({ settings }: HeaderStoreProps) {
                 )}
               </div>
 
+              {/* Painel administrativo */}
               <div className="flex items-center justify-center border-t border-(--border) p-4">
                 <Link
-                  href={"/admin"}
+                  href="/admin"
+                  prefetch={false}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Painel administrativo"
@@ -264,9 +266,11 @@ export default function HeaderStore({ settings }: HeaderStoreProps) {
             </Link>
           </div>
 
+          {/* Painel administrativo */}
           <div className="flex items-center justify-center border-t border-(--border) p-4">
             <Link
-              href={"/admin"}
+              href="/admin"
+              prefetch={false}
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Painel administrativo"

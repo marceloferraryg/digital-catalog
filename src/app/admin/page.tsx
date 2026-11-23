@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { connection } from "next/server";
 import {
   Package,
   Layers,
@@ -20,6 +21,8 @@ import { getDashboardStats } from "@/lib/supabase/dashboard";
 import { getRecentProductActivities } from "@/lib/supabase/activity-logs";
 
 export default async function AdminPage() {
+  await connection();
+
   const admin = await getAdminUser();
 
   if (!admin) {

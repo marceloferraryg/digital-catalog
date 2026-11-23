@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-
+import { connection } from "next/server";
 import HeroAssistence from "@/components/assistence/Hero";
 import AssistenceCheckup from "@/components/assistence/AssistenceCheckup";
 
@@ -7,6 +7,8 @@ import { getSiteSettings } from "@/lib/supabase/site-settings";
 import { siteConfig } from "@/config/site";
 
 async function AssistenceContent() {
+  await connection();
+
   const settings = await getSiteSettings();
 
   if (!settings) {

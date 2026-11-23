@@ -1,6 +1,7 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type DashboardStats = {
   products: {
@@ -25,13 +26,15 @@ export type DashboardStats = {
 };
 
 async function getCount(
+  supabase: SupabaseClient,
   table: "products" | "categories" | "brands" | "users",
   activeColumn?: string,
   activeValue?: boolean,
 ) {
-  const supabase = await createClient();
-
-  let query = supabase.from(table).select("*", { count: "exact", head: true });
+  let query = supabase.from(table).select("*", {
+    count: "exact",
+    head: true,
+  });
 
   if (activeColumn && activeValue !== undefined) {
     query = query.eq(activeColumn, activeValue);
@@ -47,9 +50,7 @@ async function getCount(
   return count ?? 0;
 }
 
-async function getProductsWithoutImage() {
-  const supabase = await createClient();
-
+async function getProductsWithoutImage(supabase: SupabaseClient) {
   const { data, error } = await supabase
     .from("products")
     .select("id, product_images(id)");
@@ -64,9 +65,7 @@ async function getProductsWithoutImage() {
   ).length;
 }
 
-async function getProductsWithoutPrice() {
-  const supabase = await createClient();
-
+async function getProductsWithoutPrice(supabase: SupabaseClient) {
   const { count, error } = await supabase
     .from("products")
     .select("*", { count: "exact", head: true })
@@ -83,6 +82,8 @@ async function getProductsWithoutPrice() {
 export async function getDashboardStats(
   includeUsers: boolean,
 ): Promise<DashboardStats> {
+  const supabase = await createClient();
+
   const [
     productsTotal,
     productsAvailable,
@@ -95,16 +96,18 @@ export async function getDashboardStats(
     usersTotal,
     usersActive,
   ] = await Promise.all([
-    getCount("products"),
-    getCount("products", "available", true),
-    getProductsWithoutImage(),
-    getProductsWithoutPrice(),
-    getCount("categories"),
-    getCount("categories", "active", true),
-    getCount("brands"),
-    getCount("brands", "active", true),
-    includeUsers ? getCount("users") : Promise.resolve(0),
-    includeUsers ? getCount("users", "active", true) : Promise.resolve(0),
+    getCount(supabase, "products"),
+    getCount(supabase, "products", "available", true),
+    getProductsWithoutImage(supabase),
+    getProductsWithoutPrice(supabase),
+    getCount(supabase, "categories"),
+    getCount(supabase, "categories", "active", true),
+    getCount(supabase, "brands"),
+    getCount(supabase, "brands", "active", true),
+    includeUsers ? getCount(supabase, "users") : Promise.resolve(0),
+    includeUsers
+      ? getCount(supabase, "users", "active", true)
+      : Promise.resolve(0),
   ]);
 
   return {
