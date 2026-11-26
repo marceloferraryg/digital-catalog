@@ -433,7 +433,7 @@ export default function ProductsManager({
                 !canCreate ? "cursor-not-allowed opacity-50" : ""
               }`}
             >
-              <Plus size={17} />
+              <Plus size={17} color="black" />
               <span className="text-sm font-semibold text-black">
                 Cadastrar produto
               </span>
